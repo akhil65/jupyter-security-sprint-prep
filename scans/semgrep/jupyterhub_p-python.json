@@ -1,0 +1,17 @@
+{
+  "_meta": {
+    "tool": "semgrep",
+    "rulesets": [
+      "p/owasp-top-ten",
+      "p/python",
+      "p/security-audit"
+    ],
+    "scan_date": "2026-03-08",
+    "status": "PENDING",
+    "note": "semgrep was not available in the VM environment (requires network access to semgrep.dev registry). Run scans/semgrep/run-semgrep.sh on sprint day.",
+    "install": "pip install semgrep",
+    "repo": "jupyterhub",
+    "active_ruleset": "p/python"
+  },
+  "results": []
+}

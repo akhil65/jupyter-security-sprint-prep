@@ -1,0 +1,92 @@
+{
+  "_meta": {
+    "tool": "pip-audit 2.10.0",
+    "scan_date": "2026-03-08",
+    "repo": "jupyterhub/jupyterhub",
+    "commit": "48c21ebdacf0b50e4e538c4acaf447625a0200c5",
+    "note": "Vulnerability database lookup unavailable (network restricted). Dependency list extracted from requirements.txt. Re-run pip-audit with network access on sprint day.",
+    "command": "pip-audit --requirement requirements.txt --format json --output jupyterhub.json"
+  },
+  "dependencies": [
+    {
+      "name": "alembic",
+      "specifier": "alembic>=1.4",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "certipy",
+      "specifier": "certipy>=0.1.2",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "idna",
+      "specifier": "idna",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "jinja2",
+      "specifier": "jinja2>=2.11.0",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "jupyter_events",
+      "specifier": "jupyter_events",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "oauthlib",
+      "specifier": "oauthlib>=3.0",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "packaging",
+      "specifier": "packaging",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "pamela",
+      "specifier": "pamela>=1.1.0; sys_platform != 'win32'",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "prometheus_client",
+      "specifier": "prometheus_client>=0.5.0",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "psutil",
+      "specifier": "psutil>=5.6.5; sys_platform == 'win32'",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "pydantic",
+      "specifier": "pydantic>=2",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "python-dateutil",
+      "specifier": "python-dateutil",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "requests",
+      "specifier": "requests",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "SQLAlchemy",
+      "specifier": "SQLAlchemy>=1.4.1",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "tornado",
+      "specifier": "tornado>=6.1",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "traitlets",
+      "specifier": "traitlets>=5.4",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    }
+  ]
+}

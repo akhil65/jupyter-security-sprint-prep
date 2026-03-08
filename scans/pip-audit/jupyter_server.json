@@ -1,0 +1,107 @@
+{
+  "_meta": {
+    "tool": "pip-audit 2.10.0",
+    "scan_date": "2026-03-08",
+    "repo": "jupyter-server/jupyter_server",
+    "commit": "33f5e2960c51d291e7e08957da8f7f15327833aa",
+    "note": "Vulnerability database lookup unavailable (network restricted). Dependency list extracted from pyproject.toml. Re-run pip-audit with network access on sprint day.",
+    "command": "pip-audit --requirement requirements.txt --format json --output jupyter_server.json"
+  },
+  "dependencies": [
+    {
+      "name": "anyio",
+      "specifier": "anyio>=3.1.0",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "argon2-cffi",
+      "specifier": "argon2-cffi>=21.1",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "jinja2",
+      "specifier": "jinja2>=3.0.3",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "jupyter_client",
+      "specifier": "jupyter_client>=7.4.4",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "jupyter_core",
+      "specifier": "jupyter_core>=4.12,!=5.0.*",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "jupyter_server_terminals",
+      "specifier": "jupyter_server_terminals>=0.4.4",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "nbconvert",
+      "specifier": "nbconvert>=6.4.4",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "nbformat",
+      "specifier": "nbformat>=5.3.0",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "packaging",
+      "specifier": "packaging>=22.0",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "prometheus_client",
+      "specifier": "prometheus_client>=0.9",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "pywinpty",
+      "specifier": "pywinpty>=2.0.1;os_name=='nt'",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "pyzmq",
+      "specifier": "pyzmq>=24",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "Send2Trash",
+      "specifier": "Send2Trash>=1.8.2",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "terminado",
+      "specifier": "terminado>=0.8.3",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "tornado",
+      "specifier": "tornado>=6.2.0",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "traitlets",
+      "specifier": "traitlets>=5.6.0",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "websocket-client",
+      "specifier": "websocket-client>=1.7",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "jupyter_events",
+      "specifier": "jupyter_events>=0.11.0",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    },
+    {
+      "name": "overrides",
+      "specifier": "overrides>=5.0;python_version<'3.12'",
+      "vulns": "PENDING_NETWORK_ACCESS"
+    }
+  ]
+}

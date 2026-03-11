@@ -1,0 +1,60 @@
+                   
+                   
+┌─────────────────┐
+│ 9 Code Findings │
+└─────────────────┘
+                                                                                                                 
+    /Users/akhil.au/jupyter-security-sprint-prep/repos/jupyterhub/docs/source/howto/configuration/config-proxy.md
+    ❯❱ generic.nginx.security.request-host-used.request-host-used
+          ❰❰ Blocking ❱❱
+          '$http_host' and '$host' variables may contain a malicious value from attacker controlled 'Host'
+          request header. Use an explicitly configured host value or a allow list for validation.         
+          Details: https://sg.run/4x3Z                                                                    
+                                                                                                          
+           57┆ return 302 https://$host$request_uri;
+            ⋮┆----------------------------------------
+           84┆ proxy_set_header Host $http_host;
+            ⋮┆----------------------------------------
+          103┆ If `nginx` is not running on port 443, substitute `$http_host` for `$host` on
+            ⋮┆----------------------------------------
+          103┆ If `nginx` is not running on port 443, substitute `$http_host` for `$host` on
+            ⋮┆----------------------------------------
+          118┆ return 302 https://$host$request_uri;
+                                                                                                     
+    /Users/akhil.au/jupyter-security-sprint-prep/repos/jupyterhub/examples/service-fastapi/Dockerfile
+   ❯❯❱ dockerfile.security.missing-user.missing-user
+          ❰❰ Blocking ❱❱
+          By not specifying a USER, a program in the container may run as 'root'. This is a security hazard.
+          If an attacker can control a process running as root, they may have control over the container.   
+          Ensure that the last USER in a Dockerfile is a USER other than 'root'.                            
+          Details: https://sg.run/Gbvn                                                                      
+                                                                                                            
+           ▶▶┆ Autofix ▶ USER non-root CMD ["jupyterhub", "--ip", "0.0.0.0"]
+           13┆ CMD ["jupyterhub", "--ip", "0.0.0.0"]
+                                                                                   
+    /Users/akhil.au/jupyter-security-sprint-prep/repos/jupyterhub/jupyterhub/app.py
+    ❯❱ python.jinja2.security.audit.missing-autoescape-disabled.missing-autoescape-disabled
+          ❰❰ Blocking ❱❱
+          Detected a Jinja2 environment without autoescaping. Jinja2 does not autoescape by default. This is  
+          dangerous if you are rendering to a browser because this allows for cross-site scripting (XSS)      
+          attacks. If you are in a web context, enable autoescaping by setting 'autoescape=True.' You may also
+          consider using 'jinja2.select_autoescape()' to only enable automatic escaping for certain file      
+          extensions.                                                                                         
+          Details: https://sg.run/8kY4                                                                        
+                                                                                                              
+           ▶▶┆ Autofix ▶ Environment(loader=loader, **jinja_options, autoescape=True)
+          3210┆ jinja_env = Environment(loader=loader, **jinja_options)
+            ⋮┆----------------------------------------
+           ▶▶┆ Autofix ▶ Environment(loader=loader, **jinja_options, autoescape=True)
+          3218┆ jinja_env_sync = Environment(loader=loader, **jinja_options)
+                                                                                     
+    /Users/akhil.au/jupyter-security-sprint-prep/repos/jupyterhub/jupyterhub/utils.py
+     ❱ python.lang.security.audit.network.bind.avoid-bind-to-all-interfaces
+          ❰❰ Blocking ❱❱
+          Running `socket.bind` to 0.0.0.0, or empty string could unexpectedly expose the server publicly as
+          it binds to all available interfaces. Consider instead getting correct address from an environment
+          variable or configuration file.                                                                   
+          Details: https://sg.run/rdln                                                                      
+                                                                                                            
+           76┆ sock = socket.socket()
+           77┆ sock.bind(('', 0))

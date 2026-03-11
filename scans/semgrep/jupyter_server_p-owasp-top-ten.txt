@@ -1,0 +1,31 @@
+                   
+                   
+┌─────────────────┐
+│ 2 Code Findings │
+└─────────────────┘
+                                                                                                     
+    /Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/auth/__main__.py
+    ❯❱ python.lang.security.audit.logging.logger-credential-leak.python-logger-credential-disclosure
+          ❰❰ Blocking ❱❱
+          Detected a python logger call with a potential hardcoded secret "password stored in config dir: %s"
+          % jupyter_config_dir() being logged. This may lead to secret credentials being exposed. Make sure  
+          that the logger is not logging  sensitive information.                                             
+          Details: https://sg.run/ydNx                                                                       
+                                                                                                             
+           41┆ log.info("password stored in config dir: %s" % jupyter_config_dir())
+                                                                                                 
+    /Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/serverapp.py
+    ❯❱ python.jinja2.security.audit.missing-autoescape-disabled.missing-autoescape-disabled
+          ❰❰ Blocking ❱❱
+          Detected a Jinja2 environment without autoescaping. Jinja2 does not autoescape by default. This is  
+          dangerous if you are rendering to a browser because this allows for cross-site scripting (XSS)      
+          attacks. If you are in a web context, enable autoescaping by setting 'autoescape=True.' You may also
+          consider using 'jinja2.select_autoescape()' to only enable automatic escaping for certain file      
+          extensions.                                                                                         
+          Details: https://sg.run/8kY4                                                                        
+                                                                                                              
+           ▶▶┆ Autofix ▶ Environment(  # noqa: S701 loader=FileSystemLoader(template_path, autoescape=True),
+              extensions=["jinja2.ext.i18n"], **jenv_opt , autoescape=True)                                 
+          383┆ env = Environment(  # noqa: S701
+          384┆     loader=FileSystemLoader(template_path), extensions=["jinja2.ext.i18n"], **jenv_opt
+          385┆ )

@@ -1,0 +1,95 @@
+                    
+                    
+┌──────────────────┐
+│ 11 Code Findings │
+└──────────────────┘
+                                                                                                                     
+    /Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/examples/simple/simple_ext1/templates/page.html
+    ❯❱ generic.html-templates.security.unquoted-attribute-var.unquoted-attribute-var
+          ❰❰ Blocking ❱❱
+          Detected a unquoted template variable as an attribute. If unquoted, a malicious actor could inject
+          custom JavaScript handlers. To fix this, add quotes around the template expression, like this: "{{
+          expr }}".                                                                                         
+          Details: https://sg.run/weNX                                                                      
+                                                                                                            
+            6┆ {% block favicon %}<link id="favicon" rel="shortcut icon" type="image/x-icon" href="{{
+               static_url("favicon.ico") }}">{% endblock %}                                          
+                                                                                                                     
+    /Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/examples/simple/simple_ext2/templates/page.html
+    ❯❱ generic.html-templates.security.unquoted-attribute-var.unquoted-attribute-var
+          ❰❰ Blocking ❱❱
+          Detected a unquoted template variable as an attribute. If unquoted, a malicious actor could inject
+          custom JavaScript handlers. To fix this, add quotes around the template expression, like this: "{{
+          expr }}".                                                                                         
+          Details: https://sg.run/weNX                                                                      
+                                                                                                            
+            6┆ {% block favicon %}<link id="favicon" rel="shortcut icon" type="image/x-icon" href="{{
+               static_url("favicon.ico") }}">{% endblock %}                                          
+                                                                                                                
+    /Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/templates/browser-open.html
+    ❯❱ generic.html-templates.security.var-in-href.var-in-href
+          ❰❰ Blocking ❱❱
+          Detected a template variable used in an anchor tag with the 'href' attribute. This allows a       
+          malicious actor to input the 'javascript:' URI and is subject to cross- site scripting (XSS)      
+          attacks. If using Flask, use 'url_for()' to safely generate a URL. If using Django, use the 'url' 
+          filter to safely generate a URL. If using Mustache, use a URL encoding library, or prepend a slash
+          '/' to the variable for relative links (`href="/{{link}}"`). You may also consider setting the    
+          Content Security Policy (CSP) header.                                                             
+          Details: https://sg.run/x1kP                                                                      
+                                                                                                            
+           14┆ <a href="{{ open_url }}">click here to go to Jupyter</a>.
+                                                                                                         
+    /Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/templates/login.html
+    ❯❱ python.flask.security.xss.audit.template-unescaped-with-safe.template-unescaped-with-safe
+          ❰❰ Blocking ❱❱
+          Detected a segment of a Flask template where autoescaping is explicitly disabled with '| safe'  
+          filter. This allows rendering of raw HTML in this segment. Ensure no user data is rendered here,
+          otherwise this is a cross-site scripting (XSS) vulnerability.                                   
+          Details: https://sg.run/W8og                                                                    
+                                                                                                          
+           18┆ {{ xsrf_form_html() | safe }}
+            ⋮┆----------------------------------------
+           88┆ {{ xsrf_form_html() | safe }}
+                                                                                                          
+    /Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/templates/logout.html
+    ❯❱ generic.html-templates.security.var-in-href.var-in-href
+          ❰❰ Blocking ❱❱
+          Detected a template variable used in an anchor tag with the 'href' attribute. This allows a       
+          malicious actor to input the 'javascript:' URI and is subject to cross- site scripting (XSS)      
+          attacks. If using Flask, use 'url_for()' to safely generate a URL. If using Django, use the 'url' 
+          filter to safely generate a URL. If using Mustache, use a URL encoding library, or prepend a slash
+          '/' to the variable for relative links (`href="/{{link}}"`). You may also consider setting the    
+          Content Security Policy (CSP) header.                                                             
+          Details: https://sg.run/x1kP                                                                      
+                                                                                                            
+           26┆ {% trans %}Proceed to the <a href="{{base_url}}">dashboard{% endtrans %}</a>.
+                                                                                                        
+    /Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/templates/page.html
+    ❯❱ generic.html-templates.security.unquoted-attribute-var.unquoted-attribute-var
+          ❰❰ Blocking ❱❱
+          Detected a unquoted template variable as an attribute. If unquoted, a malicious actor could inject
+          custom JavaScript handlers. To fix this, add quotes around the template expression, like this: "{{
+          expr }}".                                                                                         
+          Details: https://sg.run/weNX                                                                      
+                                                                                                            
+            9┆ {% block favicon %}<link id="favicon" rel="shortcut icon" type="image/x-icon" href="{{
+               static_url("favicon.ico") }}">                                                        
+            ⋮┆----------------------------------------
+           11┆ <link rel="stylesheet" href="{{static_url("style/bootstrap.min.css") }}" />
+            ⋮┆----------------------------------------
+           12┆ <link rel="stylesheet" href="{{static_url("style/bootstrap-theme.min.css") }}" />
+            ⋮┆----------------------------------------
+           13┆ <link rel="stylesheet" href="{{static_url("style/index.css") }}" />
+   
+    ❯❱ generic.html-templates.security.var-in-href.var-in-href
+          ❰❰ Blocking ❱❱
+          Detected a template variable used in an anchor tag with the 'href' attribute. This allows a       
+          malicious actor to input the 'javascript:' URI and is subject to cross- site scripting (XSS)      
+          attacks. If using Flask, use 'url_for()' to safely generate a URL. If using Django, use the 'url' 
+          filter to safely generate a URL. If using Mustache, use a URL encoding library, or prepend a slash
+          '/' to the variable for relative links (`href="/{{link}}"`). You may also consider setting the    
+          Content Security Policy (CSP) header.                                                             
+          Details: https://sg.run/x1kP                                                                      
+                                                                                                            
+           37┆ <div id="jupyter_server" class="nav navbar-brand"><a href="{{default_url}}" title='{% trans
+               %}dashboard{% endtrans %}'>                                                                

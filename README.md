@@ -1,4 +1,4 @@
-# Jupyter Security Sprint Prep: Real-Time Execution Firewall
+# Jupyter Security
 
 This repository contains the outcome of the **Jupyter Security Tooling Sprint** (an initiative focused on assessing Jupyter environment risks, integrating open-source security tooling, and hardening deployments against remote code execution and data exfiltration).
 

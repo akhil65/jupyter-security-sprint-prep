@@ -1,0 +1,69 @@
+{
+  "target": "training_playground",
+  "total_findings": 5,
+  "breakdown": {
+    "SAST": 0,
+    "SCA": 1,
+    "SECRETS": 1,
+    "IAC": 1,
+    "DAST": 1,
+    "AI-SPM": 1
+  },
+  "findings": [
+    {
+      "tool": "grype",
+      "category": "SCA",
+      "severity": "HIGH",
+      "file_path": "requirements.txt",
+      "description": "Requests proxy auth header leak. Fixed in >=2.31.0",
+      "ai_triage": {
+        "is_false_positive": false,
+        "suggested_fix": "Please review this manually."
+      }
+    },
+    {
+      "tool": "trufflehog",
+      "category": "SECRETS",
+      "severity": "CRITICAL",
+      "file_path": "config/settings.py",
+      "description": "Active AWS Access Key ID found and verified via API ping.",
+      "ai_triage": {
+        "is_false_positive": false,
+        "suggested_fix": "Please review this manually."
+      }
+    },
+    {
+      "tool": "trivy",
+      "category": "IAC",
+      "severity": "HIGH",
+      "file_path": "deploy/terraform/main.tf",
+      "description": "S3 bucket does not have public access block enabled.",
+      "ai_triage": {
+        "is_false_positive": false,
+        "suggested_fix": "Please review this manually."
+      }
+    },
+    {
+      "tool": "nb-defense",
+      "category": "AI-SPM",
+      "severity": "MEDIUM",
+      "file_path": "notebooks/training_data_prep.ipynb",
+      "description": "Unencrypted PII detected in notebook cell outputs.",
+      "ai_triage": {
+        "is_false_positive": false,
+        "suggested_fix": "Please review this manually."
+      }
+    },
+    {
+      "tool": "zap-dast",
+      "category": "DAST",
+      "severity": "LOW",
+      "file_path": "/",
+      "description": "Missing security headers: X-Frame-Options",
+      "ai_triage": {
+        "is_false_positive": false,
+        "suggested_fix": "Please review this manually."
+      }
+    }
+  ]
+}

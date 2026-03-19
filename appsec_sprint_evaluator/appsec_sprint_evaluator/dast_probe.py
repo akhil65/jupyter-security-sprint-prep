@@ -20,9 +20,7 @@ class DynamicAnalysisModule:
         """Attempts to spin up the target application (e.g. jupyter_server)."""
         logger.info(f"Attempting to start local instance of {self.target_repo} on port {self.port}...")
 
-        # Simple heuristic to start a local server if it's installed
         env = os.environ.copy()
-
         try:
             # We run it in the background
             self.process = subprocess.Popen(
@@ -45,7 +43,7 @@ class DynamicAnalysisModule:
 
     def run_dast_probe(self):
         """Simulates an OWASP ZAP API scan or basic fuzzer."""
-        logger.info("Running DAST probe...")
+        logger.info("Running DAST probe (OWASP ZAP AF simulation)...")
         base_url = f"http://127.0.0.1:{self.port}"
 
         # Probe 1: Check for exposed API without token
@@ -53,7 +51,7 @@ class DynamicAnalysisModule:
             res = requests.get(f"{base_url}/api/kernels", timeout=3)
             if res.status_code == 200:
                 self.findings.append(Finding(
-                    tool="dast", repo=self.target_repo, issue_id="ZAP-1",
+                    tool="zap-dast", category="DAST", repo=self.target_repo, issue_id="ZAP-1",
                     severity="HIGH", file_path="api/kernels", line_number=0,
                     description="Unauthenticated API access detected on /api/kernels",
                     raw_data={"status_code": res.status_code}
@@ -74,7 +72,7 @@ class DynamicAnalysisModule:
 
             if missing_headers:
                 self.findings.append(Finding(
-                    tool="dast", repo=self.target_repo, issue_id="ZAP-2",
+                    tool="zap-dast", category="DAST", repo=self.target_repo, issue_id="ZAP-2",
                     severity="LOW", file_path="/", line_number=0,
                     description=f"Missing security headers: {', '.join(missing_headers)}",
                     raw_data={"headers": dict(res.headers)}

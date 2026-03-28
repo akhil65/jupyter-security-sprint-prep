@@ -117,13 +117,34 @@ class SCAIntegration:
     """
     Software Composition Analysis via pip-audit JSON output.
 
-    NOTE: The stubs below return TRAINING PLAYGROUND examples only —
-    they are clearly labelled and NOT injected into production repo evaluations.
-    Real SCA results come from the pip-audit JSON files in scans/pip-audit/.
+    For real repos (jupyter_server, jupyterhub): reads scans/pip-audit/<repo>.json.
+    For the training_playground: returns a demo finding based on requirements.txt
+    pinning known-vulnerable versions of requests and urllib3.
     """
+
+    TRAINING_EXAMPLE = Finding(
+        tool="pip-audit",
+        category="SCA",
+        repo="training_playground",
+        issue_id="PYSEC-2023-74-demo",
+        severity="HIGH",
+        file_path="training_playground/requirements.txt",
+        line_number=2,
+        description=(
+            "[TRAINING DEMO] requests==2.28.1 is pinned below the fix for CVE-2023-32681 "
+            "(proxy auth header leak). Upgrade to >=2.31.0. "
+            "urllib3<1.26.17 is also below the fix for CVE-2023-43804. "
+            "In production: run pip-audit against real requirements files."
+        ),
+        raw_data={"demo": True, "package": "requests", "version": "2.28.1"},
+    )
 
     def run_sca(self, target_repo: str) -> List[Finding]:
         logger.info("Running SCA Analysis (pip-audit)...")
+
+        # Training playground: return demo finding (no real pip-audit JSON for it)
+        if target_repo == "training_playground":
+            return [self.TRAINING_EXAMPLE]
 
         # Read real pip-audit results if available
         findings = self._parse_pip_audit_json(target_repo)

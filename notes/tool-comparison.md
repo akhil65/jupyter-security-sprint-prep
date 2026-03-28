@@ -67,7 +67,9 @@ pip-audit queries the OSV (Open Source Vulnerabilities) database and/or PyPI's v
 - **Dependency resolution can fail** — complex version constraints or conflicting deps may cause errors
 
 ### Results on Jupyter repos
-- *Pending network access — see `scans/pip-audit/run-pip-audit.sh`*
+- jupyter_server: ✅ 0 CVEs
+- jupyterhub: ✅ 0 CVEs
+- Both repos clean against the OSV database as of scan date (2026-03-08)
 - Key packages to watch: tornado (CVE-2023-28370+), jinja2 (CVE-2024-22195), oauthlib (CVE-2022-36087), requests (CVE-2023-32681)
 
 ### Recommended use
@@ -98,8 +100,9 @@ Semgrep is a polyglot static analysis engine that matches code patterns using a 
 - **Community rules vary in quality** — some p/python rules have high false positive rates
 
 ### Results on Jupyter repos
-- *Pending network access — see `scans/semgrep/run-semgrep.sh`*
-- Rulesets staged: `p/owasp-top-ten`, `p/python`, `p/security-audit`
+- jupyter_server: 13 findings (11 XSS/template, 1 Jinja2 autoescape, 1 credential leak)
+- jupyterhub: 53 findings (35 template XSS, 5 nginx host header, 3 urllib, 3 exec(), 2 Jinja2 autoescape, others)
+- Rulesets used: `p/owasp-top-ten`, `p/python`, `p/security-audit`
 
 ### Recommended use
 Run as a deeper audit tool on PRs touching security-sensitive code (auth, sessions, subprocess, HTTP), rather than on every commit. Use SARIF output for GitHub integration:

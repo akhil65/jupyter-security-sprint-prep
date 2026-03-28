@@ -43,7 +43,7 @@ def run_tutorial():
 
     # 2. SCA
     print_slow(Fore.GREEN + "[Step 2] Software Composition Analysis (SCA)")
-    print_slow("Generating SBOM with Syft and scanning with Grype on `requirements.txt`...")
+    print_slow("Running pip-audit against `training_playground/requirements.txt` to check for CVEs...")
     time.sleep(1)
     sca = SCAIntegration()
     findings_sca = sca.run_sca("training_playground")
@@ -61,7 +61,7 @@ def run_tutorial():
     findings_sec = sec.run_secrets("training_playground")
     for f in findings_sec:
         print(Fore.RED + f" ✗ Found: {f.issue_id} in {f.file_path}")
-        print(Fore.WHITE + f"   Verification: The AWS Access Key is ACTIVE.")
+        print(Fore.WHITE + f"   Note: [TRAINING DEMO] Key is intentionally fake — real runs use gitleaks/trufflehog to verify liveness.")
 
     step_prompt()
 

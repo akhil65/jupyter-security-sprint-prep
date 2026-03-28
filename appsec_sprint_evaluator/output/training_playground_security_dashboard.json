@@ -11,75 +11,87 @@
   },
   "findings": [
     {
+      "issue_id": "B602",
       "tool": "bandit",
       "category": "SAST",
+      "repo": "training_playground",
       "severity": "HIGH",
       "file_path": "training_playground/vulnerable_app.py",
       "line_number": 16,
       "description": "[B602] subprocess_popen_with_shell_equals_true: subprocess call with shell=True identified, security issue.",
       "ai_triage": {
         "is_false_positive": false,
-        "suggested_fix": "Please review this manually."
+        "suggested_fix": "Manual review required."
       }
     },
     {
+      "issue_id": "B301",
       "tool": "bandit",
       "category": "SAST",
+      "repo": "training_playground",
       "severity": "MEDIUM",
       "file_path": "training_playground/vulnerable_app.py",
       "line_number": 21,
       "description": "[B301] pickle: Pickle and modules that wrap it can be unsafe when used to deserialize untrusted data, possible security issue.",
       "ai_triage": {
         "is_false_positive": false,
-        "suggested_fix": "Please review this manually."
+        "suggested_fix": "Manual review required."
       }
     },
     {
+      "issue_id": "PYSEC-2023-74-demo",
       "tool": "pip-audit",
       "category": "SCA",
+      "repo": "training_playground",
       "severity": "HIGH",
       "file_path": "training_playground/requirements.txt",
       "line_number": 2,
       "description": "[TRAINING DEMO] requests==2.28.1 is pinned below the fix for CVE-2023-32681 (proxy auth header leak). Upgrade to >=2.31.0. urllib3<1.26.17 is also below the fix for CVE-2023-43804. In production: run pip-audit against real requirements files.",
       "ai_triage": {
         "is_false_positive": false,
-        "suggested_fix": "Please review this manually."
+        "suggested_fix": "Manual review required."
       }
     },
     {
+      "issue_id": "exposed-aws-key-demo",
       "tool": "trufflehog",
       "category": "SECRETS",
+      "repo": "training_playground",
       "severity": "CRITICAL",
       "file_path": "training_playground/vulnerable_app.py",
       "line_number": 11,
       "description": "[TRAINING DEMO] Hardcoded AWS Access Key ID pattern detected (AKIA4HGEXAMPLEFAKE99 at line 11). In production: run `gitleaks detect` or `trufflehog git` against the repo.",
       "ai_triage": {
         "is_false_positive": false,
-        "suggested_fix": "Please review this manually."
+        "suggested_fix": "Manual review required."
       }
     },
     {
+      "issue_id": "AVD-AWS-0057-demo",
       "tool": "trivy",
       "category": "IAC",
+      "repo": "training_playground",
       "severity": "HIGH",
       "file_path": "training_playground/main.tf",
       "line_number": 23,
       "description": "[TRAINING DEMO] S3 bucket 'insecure' has no public access block enabled. In production: run `trivy config` or `checkov -d .` against your Terraform.",
       "ai_triage": {
         "is_false_positive": false,
-        "suggested_fix": "Please review this manually."
+        "suggested_fix": "Manual review required."
       }
     },
     {
+      "issue_id": "AI-PII-LEAK-demo",
       "tool": "nb-defense",
       "category": "AI-SPM",
+      "repo": "training_playground",
       "severity": "MEDIUM",
       "file_path": "training_playground/notebooks/example.ipynb",
       "line_number": 3,
       "description": "[TRAINING DEMO] Unencrypted PII pattern in notebook cell outputs. In production: run `nbdefense scan` against your notebooks.",
       "ai_triage": {
         "is_false_positive": false,
-        "suggested_fix": "Please review this manually."
+        "suggested_fix": "Manual review required."
       }
     }
   ]

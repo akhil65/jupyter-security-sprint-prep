@@ -16,7 +16,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/gateway/managers.py",
+      "file_path": "jupyter_server/jupyter_server/gateway/managers.py",
       "line_number": 765,
       "description": "[B604] any_other_function_with_shell_equals_true: Function call with shell=True parameter identified, possible security issue.",
       "ai_triage": {
@@ -30,7 +30,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "HIGH",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/serverapp.py",
+      "file_path": "jupyter_server/jupyter_server/serverapp.py",
       "line_number": 383,
       "description": "[B701] jinja2_autoescape_false: By default, jinja2 sets autoescape to False. Consider using autoescape=True or use the select_autoescape function to mitigate XSS vulnerabilities.",
       "ai_triage": {
@@ -44,7 +44,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/serverapp.py",
+      "file_path": "jupyter_server/jupyter_server/serverapp.py",
       "line_number": 2359,
       "description": "[B104] hardcoded_bind_all_interfaces: Possible binding to all interfaces.",
       "ai_triage": {
@@ -58,7 +58,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/services/sessions/sessionmanager.py",
+      "file_path": "jupyter_server/jupyter_server/services/sessions/sessionmanager.py",
       "line_number": 411,
       "description": "[B608] hardcoded_sql_expressions: Possible SQL injection vector through string-based query construction.",
       "ai_triage": {
@@ -72,7 +72,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/services/sessions/sessionmanager.py",
+      "file_path": "jupyter_server/jupyter_server/services/sessions/sessionmanager.py",
       "line_number": 459,
       "description": "[B608] hardcoded_sql_expressions: Possible SQL injection vector through string-based query construction.",
       "ai_triage": {
@@ -86,7 +86,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/extension/test_launch.py",
+      "file_path": "jupyter_server/tests/extension/test_launch.py",
       "line_number": 36,
       "description": "[B113] request_without_timeout: Call to requests without timeout",
       "ai_triage": {
@@ -100,7 +100,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/extension/test_launch.py",
+      "file_path": "jupyter_server/tests/extension/test_launch.py",
       "line_number": 94,
       "description": "[B113] request_without_timeout: Call to requests without timeout",
       "ai_triage": {
@@ -114,7 +114,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/services/contents/test_fileio.py",
+      "file_path": "jupyter_server/tests/services/contents/test_fileio.py",
       "line_number": 34,
       "description": "[B103] set_bad_file_permissions: Chmod setting a permissive mask 0o701 on file (NOT PARSED).",
       "ai_triage": {
@@ -128,7 +128,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/services/contents/test_fileio.py",
+      "file_path": "jupyter_server/tests/services/contents/test_fileio.py",
       "line_number": 175,
       "description": "[B108] hardcoded_tmp_directory: Probable insecure usage of temp file/directory.",
       "ai_triage": {
@@ -142,7 +142,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/services/contents/test_fileio.py",
+      "file_path": "jupyter_server/tests/services/contents/test_fileio.py",
       "line_number": 176,
       "description": "[B108] hardcoded_tmp_directory: Probable insecure usage of temp file/directory.",
       "ai_triage": {
@@ -156,7 +156,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/services/contents/test_fileio.py",
+      "file_path": "jupyter_server/tests/services/contents/test_fileio.py",
       "line_number": 172,
       "description": "[B108] hardcoded_tmp_directory: Probable insecure usage of temp file/directory.",
       "ai_triage": {
@@ -170,7 +170,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/test_serverapp.py",
+      "file_path": "jupyter_server/tests/test_serverapp.py",
       "line_number": 208,
       "description": "[B108] hardcoded_tmp_directory: Probable insecure usage of temp file/directory.",
       "ai_triage": {
@@ -184,7 +184,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/test_serverapp.py",
+      "file_path": "jupyter_server/tests/test_serverapp.py",
       "line_number": 219,
       "description": "[B108] hardcoded_tmp_directory: Probable insecure usage of temp file/directory.",
       "ai_triage": {
@@ -198,7 +198,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/test_serverapp.py",
+      "file_path": "jupyter_server/tests/test_serverapp.py",
       "line_number": 220,
       "description": "[B108] hardcoded_tmp_directory: Probable insecure usage of temp file/directory.",
       "ai_triage": {
@@ -212,7 +212,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/test_serverapp.py",
+      "file_path": "jupyter_server/tests/test_serverapp.py",
       "line_number": 221,
       "description": "[B108] hardcoded_tmp_directory: Probable insecure usage of temp file/directory.",
       "ai_triage": {
@@ -226,7 +226,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/test_serverapp.py",
+      "file_path": "jupyter_server/tests/test_serverapp.py",
       "line_number": 221,
       "description": "[B108] hardcoded_tmp_directory: Probable insecure usage of temp file/directory.",
       "ai_triage": {
@@ -240,7 +240,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/test_serverapp.py",
+      "file_path": "jupyter_server/tests/test_serverapp.py",
       "line_number": 307,
       "description": "[B108] hardcoded_tmp_directory: Probable insecure usage of temp file/directory.",
       "ai_triage": {
@@ -254,7 +254,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/test_serverapp.py",
+      "file_path": "jupyter_server/tests/test_serverapp.py",
       "line_number": 313,
       "description": "[B108] hardcoded_tmp_directory: Probable insecure usage of temp file/directory.",
       "ai_triage": {
@@ -268,7 +268,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/test_terminal.py",
+      "file_path": "jupyter_server/tests/test_terminal.py",
       "line_number": 199,
       "description": "[B108] hardcoded_tmp_directory: Probable insecure usage of temp file/directory.",
       "ai_triage": {
@@ -282,7 +282,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/test_utils.py",
+      "file_path": "jupyter_server/tests/test_utils.py",
       "line_number": 120,
       "description": "[B108] hardcoded_tmp_directory: Probable insecure usage of temp file/directory.",
       "ai_triage": {
@@ -296,7 +296,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/sessions/dreamy-kind-clarke/mnt/jupyter-security-sprint-prep/repos/jupyter_server/tests/unix_sockets/conftest.py",
+      "file_path": "jupyter_server/tests/unix_sockets/conftest.py",
       "line_number": 20,
       "description": "[B108] hardcoded_tmp_directory: Probable insecure usage of temp file/directory.",
       "ai_triage": {
@@ -310,7 +310,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/examples/simple/simple_ext1/templates/page.html",
+      "file_path": "jupyter_server/examples/simple/simple_ext1/templates/page.html",
       "line_number": 6,
       "description": "Detected a unquoted template variable as an attribute. If unquoted, a malicious actor could inject custom JavaScript handlers. To fix this, add quotes around the template expression, like this: \"{{ expr }}\".",
       "ai_triage": {
@@ -324,7 +324,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/examples/simple/simple_ext2/templates/page.html",
+      "file_path": "jupyter_server/examples/simple/simple_ext2/templates/page.html",
       "line_number": 6,
       "description": "Detected a unquoted template variable as an attribute. If unquoted, a malicious actor could inject custom JavaScript handlers. To fix this, add quotes around the template expression, like this: \"{{ expr }}\".",
       "ai_triage": {
@@ -338,7 +338,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/auth/__main__.py",
+      "file_path": "jupyter_server/jupyter_server/auth/__main__.py",
       "line_number": 41,
       "description": "Detected a python logger call with a potential hardcoded secret \"password stored in config dir: %s\" % jupyter_config_dir() being logged. This may lead to secret credentials being exposed. Make sure that the logger is not logging  sensitive information.",
       "ai_triage": {
@@ -352,7 +352,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/serverapp.py",
+      "file_path": "jupyter_server/jupyter_server/serverapp.py",
       "line_number": 383,
       "description": "Detected a Jinja2 environment without autoescaping. Jinja2 does not autoescape by default. This is dangerous if you are rendering to a browser because this allows for cross-site scripting (XSS) attacks. If you are in a web context, enable autoescaping by setting 'autoescape=True.' You may also consider using 'jinja2.select_autoescape()' to only enable automatic escaping for certain file extensions.",
       "ai_triage": {
@@ -366,7 +366,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/templates/browser-open.html",
+      "file_path": "jupyter_server/jupyter_server/templates/browser-open.html",
       "line_number": 14,
       "description": "Detected a template variable used in an anchor tag with the 'href' attribute. This allows a malicious actor to input the 'javascript:' URI and is subject to cross- site scripting (XSS) attacks. If using Flask, use 'url_for()' to safely generate a URL. If using Django, use the 'url' filter to safely generate a URL. If using Mustache, use a URL encoding library, or prepend a slash '/' to the variable for relative links (`href=\"/{{link}}\"`). You may also consider setting the Content Security Policy (CSP) header.",
       "ai_triage": {
@@ -380,7 +380,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/templates/login.html",
+      "file_path": "jupyter_server/jupyter_server/templates/login.html",
       "line_number": 18,
       "description": "Detected a segment of a Flask template where autoescaping is explicitly disabled with '| safe' filter. This allows rendering of raw HTML in this segment. Ensure no user data is rendered here, otherwise this is a cross-site scripting (XSS) vulnerability.",
       "ai_triage": {
@@ -394,7 +394,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/templates/login.html",
+      "file_path": "jupyter_server/jupyter_server/templates/login.html",
       "line_number": 88,
       "description": "Detected a segment of a Flask template where autoescaping is explicitly disabled with '| safe' filter. This allows rendering of raw HTML in this segment. Ensure no user data is rendered here, otherwise this is a cross-site scripting (XSS) vulnerability.",
       "ai_triage": {
@@ -408,7 +408,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/templates/logout.html",
+      "file_path": "jupyter_server/jupyter_server/templates/logout.html",
       "line_number": 26,
       "description": "Detected a template variable used in an anchor tag with the 'href' attribute. This allows a malicious actor to input the 'javascript:' URI and is subject to cross- site scripting (XSS) attacks. If using Flask, use 'url_for()' to safely generate a URL. If using Django, use the 'url' filter to safely generate a URL. If using Mustache, use a URL encoding library, or prepend a slash '/' to the variable for relative links (`href=\"/{{link}}\"`). You may also consider setting the Content Security Policy (CSP) header.",
       "ai_triage": {
@@ -422,7 +422,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/templates/page.html",
+      "file_path": "jupyter_server/jupyter_server/templates/page.html",
       "line_number": 9,
       "description": "Detected a unquoted template variable as an attribute. If unquoted, a malicious actor could inject custom JavaScript handlers. To fix this, add quotes around the template expression, like this: \"{{ expr }}\".",
       "ai_triage": {
@@ -436,7 +436,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/templates/page.html",
+      "file_path": "jupyter_server/jupyter_server/templates/page.html",
       "line_number": 11,
       "description": "Detected a unquoted template variable as an attribute. If unquoted, a malicious actor could inject custom JavaScript handlers. To fix this, add quotes around the template expression, like this: \"{{ expr }}\".",
       "ai_triage": {
@@ -450,7 +450,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/templates/page.html",
+      "file_path": "jupyter_server/jupyter_server/templates/page.html",
       "line_number": 12,
       "description": "Detected a unquoted template variable as an attribute. If unquoted, a malicious actor could inject custom JavaScript handlers. To fix this, add quotes around the template expression, like this: \"{{ expr }}\".",
       "ai_triage": {
@@ -464,7 +464,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/templates/page.html",
+      "file_path": "jupyter_server/jupyter_server/templates/page.html",
       "line_number": 13,
       "description": "Detected a unquoted template variable as an attribute. If unquoted, a malicious actor could inject custom JavaScript handlers. To fix this, add quotes around the template expression, like this: \"{{ expr }}\".",
       "ai_triage": {
@@ -478,7 +478,7 @@
       "category": "SAST",
       "repo": "jupyter_server",
       "severity": "MEDIUM",
-      "file_path": "/Users/akhil.au/jupyter-security-sprint-prep/repos/jupyter_server/jupyter_server/templates/page.html",
+      "file_path": "jupyter_server/jupyter_server/templates/page.html",
       "line_number": 37,
       "description": "Detected a template variable used in an anchor tag with the 'href' attribute. This allows a malicious actor to input the 'javascript:' URI and is subject to cross- site scripting (XSS) attacks. If using Flask, use 'url_for()' to safely generate a URL. If using Django, use the 'url' filter to safely generate a URL. If using Mustache, use a URL encoding library, or prepend a slash '/' to the variable for relative links (`href=\"/{{link}}\"`). You may also consider setting the Content Security Policy (CSP) header.",
       "ai_triage": {

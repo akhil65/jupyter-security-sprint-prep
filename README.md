@@ -15,8 +15,8 @@ The extension parses the Python Abstract Syntax Tree (AST) of the incoming code 
 * **Protocol Aware:** Supports both legacy JSON WebSockets and the modern multiplexed `v1.kernel.websocket.jupyter.org` binary subprotocol.
 * **AST Analyzer:** Analyzes the Python code for:
   * Restricted modules (`os`, `subprocess`, `socket`, `pty`, `importlib`, `sys`, `shutil`, `urllib`, `http`, `requests`).
-  * Restricted builtins and dynamic code execution (`eval`, `exec`, `compile`, `__import__`). Note: `open` is intentionally **not** blocked to preserve legitimate data science file I/O.
-  * Dangerous dunder attribute access (`__class__`, `__subclasses__`, `__mro__`, `__bases__`) to prevent sandbox escapes via Python's object hierarchy.
+  * Restricted builtins and dynamic code execution (`eval`, `exec`, `compile`, `__import__`, `getattr`, `setattr`, `delattr`). Note: `open` is intentionally **not** blocked to preserve legitimate data science file I/O.
+  * Dangerous dunder attribute access (`__class__`, `__subclasses__`, `__mro__`, `__bases__`, `__builtins__`) to prevent sandbox escapes via Python's object hierarchy.
   * **IPython magic handling:** Shell escape commands (`!cmd`) and shell cell magics (`%%bash`, `%%sh`) are explicitly detected and blocked with a clear `SecurityError`. Standard line/cell magics (`%matplotlib inline`, `%%timeit`, etc.) are stripped before AST analysis so they pass through — legitimate data science notebooks are not broken.
 * **Fail-Closed Design:** If a message is malformed or unparseable, it is dropped and not forwarded to the ZeroMQ kernel channels.
 * **Seamless UI Integration:** When code is blocked, the extension synthesizes `execute_reply` and `error` messages back to the frontend, so the user sees a clear "Security Policy Violation" error inline in their notebook.

@@ -14,15 +14,15 @@ This directory contains intentionally vulnerable files used to verify that the `
 
 The evaluator has two modes:
 
-| Stage | Tool | Status |
-|-------|------|--------|
-| SAST | bandit + semgrep | ✅ Fully integrated — reads real JSON from `scans/` |
-| SCA | pip-audit | ✅ Fully integrated — reads real JSON from `scans/pip-audit/` |
-| Secrets | gitleaks / trufflehog | 🔧 Stub — returns training demo finding only |
-| IaC | trivy / checkov | 🔧 Stub — returns training demo finding only |
-| AI-SPM | nb-defense | 🔧 Stub — returns training demo finding only |
-| DAST | jupyter server probe | ✅ Implemented — spins up local Jupyter Server, checks `/api/kernels` auth and security headers |
-| AI Triage | Gemini / mock | ✅ Implemented — mock mode always available, Gemini requires API key |
+| Stage | Tool | training_playground | Real repos (jupyter_server / jupyterhub) |
+|-------|------|---------------------|------------------------------------------|
+| SAST | bandit + semgrep | Pre-canned demo findings (no scan needed) | ✅ Reads real JSON from `scans/bandit/` and `scans/semgrep/` |
+| SCA | pip-audit | Pre-canned demo finding (no scan needed) | ✅ Reads real JSON from `scans/pip-audit/` |
+| Secrets | gitleaks / trufflehog | 🔧 Stub — returns demo finding only | 🔧 Stub — integrate CLI for real results |
+| IaC | trivy / checkov | 🔧 Stub — returns demo finding only | 🔧 Stub — integrate CLI for real results |
+| AI-SPM | nb-defense | 🔧 Stub — returns demo finding only | 🔧 Stub — integrate CLI for real results |
+| DAST | jupyter server probe | ⏭ Skipped — no live server to probe | ✅ Spins up local Jupyter Server, checks `/api/kernels` auth and security headers |
+| AI Triage | Gemini / mock | ✅ Mock mode always available | ✅ Mock always available, Gemini requires `GEMINI_API_KEY` |
 
 ## Running the Tutorial
 

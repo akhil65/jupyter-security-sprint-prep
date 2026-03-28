@@ -77,9 +77,13 @@ class SecurityASTNodeVisitor(ast.NodeVisitor):
         # file I/O (e.g. `with open('data.csv') as f:`).
         # 'globals' and 'locals' are excluded — they have legitimate uses
         # in metaprogramming helpers.
+        # getattr/setattr/delattr are also included here so that storing them as
+        # a reference (e.g. `f = getattr`) is caught, consistent with how eval/exec
+        # are caught. Direct calls are already flagged in visit_Call.
         DANGEROUS_NAMES = {
             '__builtins__', '__import__',
             'eval', 'exec', 'compile',
+            'getattr', 'setattr', 'delattr',
         }
         if node.id in DANGEROUS_NAMES:
             # Only report if this name is NOT the direct target of a call.

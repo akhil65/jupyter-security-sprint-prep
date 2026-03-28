@@ -50,8 +50,10 @@ class GitHubReporter:
             },
             "findings": [
                 {
+                    "issue_id": f.issue_id,
                     "tool": f.tool,
                     "category": f.category,
+                    "repo": f.repo,
                     "severity": f.severity,
                     "file_path": f.file_path,
                     "line_number": f.line_number,

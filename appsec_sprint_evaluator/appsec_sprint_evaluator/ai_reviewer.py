@@ -50,7 +50,7 @@ class AITriageEngine:
                 "reason": "| safe on user-facing template disables escaping.",
                 "suggested_fix": "Remove the '| safe' filter in Jinja2 templates or validate input.",
             }
-        return {"is_false_positive": False, "suggested_fix": "Please review this manually."}
+        return {"is_false_positive": False, "suggested_fix": "Manual review required."}
 
     def _gemini_triage(self, finding: Finding) -> dict:
         """Calls the actual Gemini API."""

@@ -22,8 +22,8 @@ class GitHubReporter:
 
     def generate_dashboard(self, findings: list, target_repo: str):
         """Generates a unified security findings dashboard (Markdown and JSON)."""
-        md_path = self.output_dir / f"{target_repo}_aspm_dashboard.md"
-        json_path = self.output_dir / f"{target_repo}_aspm_dashboard.json"
+        md_path = self.output_dir / f"{target_repo}_security_dashboard.md"
+        json_path = self.output_dir / f"{target_repo}_security_dashboard.json"
 
         logger.info(f"Generating security findings dashboard at {md_path}...")
 

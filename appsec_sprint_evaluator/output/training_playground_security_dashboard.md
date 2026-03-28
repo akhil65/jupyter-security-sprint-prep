@@ -1,4 +1,4 @@
-# AppSec Sprint Evaluator Dashboard: training_playground
+# Security Findings Dashboard: training_playground
 
 > **Note:** This is a reference example showing what the dashboard looks like when
 > `appsec-eval --target-repo training_playground` runs against the training playground files.

@@ -102,8 +102,8 @@ def run_tutorial():
     print_slow("The tool generates a unified security findings dashboard (Markdown/JSON) and opens a Draft PR.")
     time.sleep(1)
 
-    print(Fore.BLUE + "   -> Generating `output/training_playground_aspm_dashboard.md`...")
-    print(Fore.BLUE + "   -> Generating `output/training_playground_aspm_dashboard.json`...")
+    print(Fore.BLUE + "   -> Generating `output/training_playground_security_dashboard.md`...")
+    print(Fore.BLUE + "   -> Generating `output/training_playground_security_dashboard.json`...")
     print(Fore.BLUE + "   -> (Simulated) Opened GitHub Draft PR: 'Fix: Address High-Severity Security Findings'")
 
     print_slow(Fore.CYAN + Style.BRIGHT + "\n============================================================")

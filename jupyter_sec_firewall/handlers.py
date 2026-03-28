@@ -30,10 +30,18 @@ class SecureZMQChannelsWebsocketConnection(ZMQChannelsWebsocketConnection):
             if self.subprotocol == "v1.kernel.websocket.jupyter.org":
                 channel, msg_list = deserialize_msg_from_ws_v1(ws_msg)
 
-                # In v1 protocol, we can deserialize it to understand the message content
-                # self.session.deserialize will pull the header, parent_header, metadata, content out
-                idents, msg_list_rest = self.session.feed_identities(msg_list)
-                msg = self.session.deserialize(msg_list_rest)
+                # session lives on the kernel manager, not directly on this connection.
+                # Resolve it safely to avoid AttributeError.
+                session = getattr(self, 'session', None) or getattr(
+                    getattr(self, 'kernel_manager', None), 'session', None
+                )
+                if session is None:
+                    # Cannot decode — pass through rather than drop silently.
+                    super().handle_incoming_message(incoming_msg)
+                    return
+
+                idents, msg_list_rest = session.feed_identities(msg_list)
+                msg = session.deserialize(msg_list_rest)
                 msg_type = msg.get('header', {}).get('msg_type', '')
                 content = msg.get('content', {})
             else:
@@ -119,19 +127,21 @@ class SecureZMQChannelsWebsocketConnection(ZMQChannelsWebsocketConnection):
         def write(msg_dict):
             ch = msg_dict.get("channel", "iopub")
             if self.subprotocol == "v1.kernel.websocket.jupyter.org":
-                # Ensure compatibility with varying implementations of serialize_msg_to_ws_v1
-                try:
-                    bin_msg = serialize_msg_to_ws_v1(msg_dict, ch, pack=self.session.pack)
-                except TypeError:
-                    # Fallback if pack is not accepted by the function signature
-                    msg_list = [
-                        self.session.pack(msg_dict["header"]),
-                        self.session.pack(msg_dict["parent_header"]),
-                        self.session.pack(msg_dict["metadata"]),
-                        self.session.pack(msg_dict["content"]),
-                    ]
-                    bin_msg = serialize_msg_to_ws_v1(msg_list, ch)
-
+                # serialize_msg_to_ws_v1 expects a *list of packed bytes*, not a dict.
+                # We must pack each field individually before passing to the serializer.
+                session = getattr(self, 'session', None) or getattr(
+                    getattr(self, 'kernel_manager', None), 'session', None
+                )
+                if session is None:
+                    logger.error("Cannot send v1 error reply: session not available.")
+                    return
+                packed_list = [
+                    session.pack(msg_dict["header"]),
+                    session.pack(msg_dict["parent_header"]),
+                    session.pack(msg_dict["metadata"]),
+                    session.pack(msg_dict["content"]),
+                ]
+                bin_msg = serialize_msg_to_ws_v1(packed_list, ch)
                 self.websocket_handler.write_message(bin_msg, binary=True)
             else:
                 self.websocket_handler.write_message(json.dumps(msg_dict))

@@ -6,10 +6,11 @@ build-backend = "hatchling.build"
 name = "jupyter_sec_firewall"
 version = "0.1.0"
 description = "A real-time Jupyter execution firewall that intercepts and blocks malicious commands."
-authors = [{name = "Jules", email = "jules@example.com"}]
+authors = [{name = "Akil", email = "akhilanand32@gmail.com"}]
 dependencies = [
     "jupyter_server>=2.0.0",
-    "tornado"
+    "tornado",
+    "websocket-client>=1.0",  # required by test_ws.py integration test
 ]
 readme = "README.md"
 requires-python = ">=3.8"

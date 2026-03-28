@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jupyter Security Sprint — Architecture Explainer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; padding: 32px 24px; }
+
+  h1 { font-size: 22px; font-weight: 700; color: #f0f6fc; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #8b949e; margin-bottom: 36px; }
+
+  .section-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8b949e; margin-bottom: 14px; }
+
+  /* ===== OVERVIEW CARDS ===== */
+  .overview { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 40px; }
+  .card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px; }
+  .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .badge { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; letter-spacing: 0.05em; }
+  .badge-runtime { background: #1f3a2f; color: #3fb950; border: 1px solid #2d6e42; }
+  .badge-ci { background: #1a2a3f; color: #58a6ff; border: 1px solid #1f4a7a; }
+  .card h2 { font-size: 15px; font-weight: 600; color: #f0f6fc; }
+  .card p { font-size: 13px; color: #8b949e; line-height: 1.6; margin-top: 8px; }
+
+  /* ===== FIREWALL DIAGRAM ===== */
+  .diagram-section { margin-bottom: 40px; }
+  .diagram-box { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 28px; }
+
+  .flow { display: flex; align-items: stretch; gap: 0; overflow-x: auto; }
+  .flow-node { display: flex; flex-direction: column; align-items: center; }
+  .node-box { border-radius: 8px; padding: 12px 16px; text-align: center; min-width: 130px; }
+  .node-label { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  .node-sub { font-size: 10px; opacity: 0.7; line-height: 1.4; }
+
+  .node-browser { background: #1c2a3a; border: 1px solid #1f4a7a; color: #58a6ff; }
+  .node-ws { background: #1a2535; border: 1px dashed #1f4a7a; color: #4a9eff; }
+  .node-firewall { background: #2d1f0e; border: 1px solid #7a4a1f; color: #f0883e; }
+  .node-ast { background: #1f2d1f; border: 1px solid #2d6e42; color: #3fb950; }
+  .node-block { background: #2d1a1a; border: 1px solid #7a2020; color: #f85149; }
+  .node-pass { background: #1f2d1f; border: 1px solid #2d6e42; color: #3fb950; }
+  .node-kernel { background: #1c2a3a; border: 1px solid #1f4a7a; color: #58a6ff; }
+
+  .arrow { display: flex; align-items: center; padding: 0 8px; color: #484f58; font-size: 18px; align-self: center; margin-top: -20px; }
+
+  .decision { display: flex; gap: 8px; margin-top: 10px; }
+
+  .legend-row { display: flex; gap: 20px; margin-top: 16px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #8b949e; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* ===== EVALUATOR PIPELINE ===== */
+  .pipeline { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin: 20px 0; }
+  .pipe-step { background: #1c2128; border: 1px solid #30363d; border-radius: 8px; padding: 12px 8px; text-align: center; position: relative; }
+  .pipe-step::after { content: '→'; position: absolute; right: -14px; top: 50%; transform: translateY(-50%); color: #484f58; font-size: 14px; z-index: 1; }
+  .pipe-step:last-child::after { display: none; }
+  .pipe-num { font-size: 9px; font-weight: 700; color: #58a6ff; margin-bottom: 6px; letter-spacing: 0.05em; }
+  .pipe-name { font-size: 11px; font-weight: 600; color: #f0f6fc; margin-bottom: 4px; }
+  .pipe-tool { font-size: 10px; color: #8b949e; }
+  .pipe-sast { border-color: #2d6e42; }
+  .pipe-sca { border-color: #1f4a7a; }
+  .pipe-secrets { border-color: #7a2020; }
+  .pipe-iac { border-color: #4a3a7a; }
+  .pipe-aispm { border-color: #7a4a1f; }
+  .pipe-dast { border-color: #3a6e6e; }
+  .pipe-ai { border-color: #6e4a7a; }
+
+  /* ===== FINDING FLOW ===== */
+  .finding-flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; gap: 12px; margin: 20px 0; }
+  .fflow-box { background: #1c2128; border: 1px solid #30363d; border-radius: 8px; padding: 14px; }
+  .fflow-arrow { color: #484f58; font-size: 20px; text-align: center; }
+  .fflow-title { font-size: 12px; font-weight: 600; color: #f0f6fc; margin-bottom: 8px; }
+  .fflow-item { font-size: 11px; color: #8b949e; padding: 3px 0; border-bottom: 1px solid #21262d; }
+  .fflow-item:last-child { border-bottom: none; }
+  .sev-critical { color: #f85149; }
+  .sev-high { color: #f0883e; }
+  .sev-medium { color: #d29922; }
+  .sev-low { color: #3fb950; }
+
+  /* ===== REPO TARGETS ===== */
+  .targets { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 16px 0; }
+  .target { background: #1c2128; border: 1px solid #30363d; border-radius: 8px; padding: 14px; }
+  .target-name { font-size: 13px; font-weight: 600; color: #58a6ff; margin-bottom: 8px; }
+  .target-hash { font-size: 10px; color: #484f58; font-family: monospace; margin-bottom: 8px; }
+  .stat-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; }
+  .stat-label { color: #8b949e; }
+
+  /* ===== TOOL COMPARISON ===== */
+  .tool-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 16px 0; }
+  .tool-card { background: #1c2128; border: 1px solid #30363d; border-radius: 8px; padding: 16px; }
+  .tool-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .tool-type { font-size: 10px; color: #8b949e; margin-bottom: 12px; }
+  .tool-stat { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px solid #21262d; }
+  .tool-stat:last-child { border-bottom: none; }
+  .tool-stat-label { color: #8b949e; }
+  .tool-stat-val { font-weight: 600; }
+  .bandit-col { color: #f0883e; }
+  .pipaudit-col { color: #3fb950; }
+  .semgrep-col { color: #d2a8ff; }
+
+  /* ===== SECTION DIVIDER ===== */
+  .divider { height: 1px; background: #21262d; margin: 32px 0; }
+
+  /* ===== KEY FINDINGS ===== */
+  .findings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+  .finding-card { background: #1c2128; border-radius: 8px; padding: 14px; border-left: 3px solid; }
+  .finding-card.critical { border-color: #f85149; }
+  .finding-card.high { border-color: #f0883e; }
+  .finding-card.medium { border-color: #d29922; }
+  .finding-card.low { border-color: #3fb950; }
+  .finding-sev { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 6px; }
+  .finding-card.critical .finding-sev { color: #f85149; }
+  .finding-card.high .finding-sev { color: #f0883e; }
+  .finding-card.medium .finding-sev { color: #d29922; }
+  .finding-card.low .finding-sev { color: #3fb950; }
+  .finding-title { font-size: 12px; font-weight: 600; color: #f0f6fc; margin-bottom: 4px; }
+  .finding-loc { font-size: 10px; color: #8b949e; font-family: monospace; margin-bottom: 6px; }
+  .finding-desc { font-size: 11px; color: #8b949e; line-height: 1.5; }
+
+  /* ===== TABS ===== */
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; border-bottom: 1px solid #21262d; padding-bottom: 0; }
+  .tab { font-size: 13px; padding: 8px 16px; border-radius: 6px 6px 0 0; cursor: pointer; color: #8b949e; border: 1px solid transparent; border-bottom: none; margin-bottom: -1px; }
+  .tab.active { background: #161b22; color: #f0f6fc; border-color: #30363d; border-bottom-color: #161b22; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .tag { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 4px; margin-right: 4px; font-weight: 600; }
+  .tag-green { background: #1f3a2f; color: #3fb950; }
+  .tag-orange { background: #2d1f0e; color: #f0883e; }
+  .tag-red { background: #2d1a1a; color: #f85149; }
+  .tag-blue { background: #1a2a3f; color: #58a6ff; }
+  .tag-purple { background: #2d1f3a; color: #d2a8ff; }
+</style>
+</head>
+<body>
+
+<h1>🔐 Jupyter Security Sprint — Architecture</h1>
+<p class="subtitle">Two tools built for the Jupyter security ecosystem · March 2026</p>
+
+<!-- OVERVIEW -->
+<p class="section-title">What's Being Built</p>
+<div class="overview">
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-runtime">RUNTIME</span>
+      <h2>jupyter_sec_firewall</h2>
+    </div>
+    <p>A Jupyter Server <strong style="color:#f0f6fc">extension</strong> that sits between the browser and the Python kernel. Every time you run a cell, it intercepts the code <em>before</em> the kernel sees it, runs an AST security check, and either allows or blocks execution — showing an error in the notebook if blocked.</p>
+    <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+      <span class="tag tag-orange">Runtime Protection</span>
+      <span class="tag tag-blue">WebSocket Intercept</span>
+      <span class="tag tag-green">AST Analysis</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">
+      <span class="badge badge-ci">CI / SPRINT TOOL</span>
+      <h2>appsec_sprint_evaluator</h2>
+    </div>
+    <p>A CLI tool that orchestrates a full <strong style="color:#f0f6fc">ASPM pipeline</strong> — running SAST (bandit/semgrep), SCA (pip-audit/grype), secret detection, IaC scanning, DAST probing, and AI-assisted triage — then consolidates everything into a unified dashboard and optionally opens draft GitHub PRs with suggested fixes.</p>
+    <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+      <span class="tag tag-blue">Multi-Tool Pipeline</span>
+      <span class="tag tag-purple">AI Triage (Gemini)</span>
+      <span class="tag tag-green">GitHub Integration</span>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('firewall')">Firewall — How It Works</div>
+  <div class="tab" onclick="showTab('evaluator')">Evaluator Pipeline</div>
+  <div class="tab" onclick="showTab('findings')">Real Scan Results</div>
+  <div class="tab" onclick="showTab('tools')">Tool Comparison</div>
+</div>
+
+<!-- TAB: FIREWALL -->
+<div id="tab-firewall" class="tab-content active">
+  <div class="diagram-box">
+    <p class="section-title" style="margin-bottom:20px">Message Lifecycle — From Cell Run to Kernel</p>
+
+    <div class="flow" style="justify-content:center; align-items:flex-start; gap:4px;">
+
+      <div class="flow-node">
+        <div class="node-box node-browser">
+          <div class="node-label">Browser</div>
+          <div class="node-sub">You click ▶<br>in Jupyter</div>
+        </div>
+      </div>
+
+      <div class="arrow">→</div>
+
+      <div class="flow-node">
+        <div class="node-box node-ws">
+          <div class="node-label">WebSocket</div>
+          <div class="node-sub">execute_request<br>over WS</div>
+        </div>
+      </div>
+
+      <div class="arrow">→</div>
+
+      <div class="flow-node">
+        <div class="node-box node-firewall">
+          <div class="node-label">🔥 Firewall</div>
+          <div class="node-sub">SecureZMQChannels<br>WebsocketConnection</div>
+        </div>
+        <div style="font-size:10px;color:#8b949e;margin-top:8px;text-align:center">intercepts<br>every message</div>
+      </div>
+
+      <div class="arrow">→</div>
+
+      <div class="flow-node">
+        <div class="node-box node-ast">
+          <div class="node-label">AST Analyzer</div>
+          <div class="node-sub">Parses code into<br>syntax tree &amp; checks rules</div>
+        </div>
+        <div style="font-size:10px;color:#3fb950;margin-top:8px;text-align:center">
+          Blocks: os, subprocess,<br>socket, eval, exec...
+        </div>
+      </div>
+
+      <div class="arrow">→</div>
+
+      <div class="flow-node" style="gap:10px;">
+        <div class="node-box node-block" style="margin-bottom:8px">
+          <div class="node-label">✗ BLOCKED</div>
+          <div class="node-sub">SecurityError sent<br>back to notebook</div>
+        </div>
+        <div style="font-size:20px;text-align:center;color:#484f58">OR</div>
+        <div class="node-box node-pass" style="margin-top:8px">
+          <div class="node-label">✓ ALLOWED</div>
+          <div class="node-sub">Passes through<br>to ZMQ</div>
+        </div>
+      </div>
+
+      <div class="arrow">→</div>
+
+      <div class="flow-node">
+        <div class="node-box node-kernel">
+          <div class="node-label">🐍 Kernel</div>
+          <div class="node-sub">Python kernel<br>executes code</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="divider" style="margin:24px 0 16px;"></div>
+
+    <p class="section-title">What the AST Analyzer Checks</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px;">
+      <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:14px;">
+        <div style="font-size:11px;font-weight:700;color:#f0883e;margin-bottom:8px">RESTRICTED IMPORTS</div>
+        <div style="font-size:11px;color:#8b949e;font-family:monospace;line-height:1.8">
+          os · subprocess · socket<br>
+          pty · importlib · sys<br>
+          shutil · urllib · http<br>requests
+        </div>
+      </div>
+      <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:14px;">
+        <div style="font-size:11px;font-weight:700;color:#f0883e;margin-bottom:8px">RESTRICTED BUILTINS</div>
+        <div style="font-size:11px;color:#8b949e;font-family:monospace;line-height:1.8">
+          eval · exec · compile<br>
+          open · globals · locals<br>
+          __import__ · getattr<br>setattr · delattr
+        </div>
+      </div>
+      <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:14px;">
+        <div style="font-size:11px;font-weight:700;color:#f0883e;margin-bottom:8px">RESTRICTED ATTRIBUTES</div>
+        <div style="font-size:11px;color:#8b949e;font-family:monospace;line-height:1.8">
+          __class__ · __subclasses__<br>
+          __bases__ · __mro__<br>
+          __builtins__<br>sys.modules
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:20px;background:#1f2d1f;border:1px solid #2d6e42;border-radius:8px;padding:14px;">
+      <div style="font-size:11px;font-weight:700;color:#3fb950;margin-bottom:8px">HOW THE EXTENSION LOADS</div>
+      <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:#8b949e;">
+        <code style="background:#161b22;padding:3px 7px;border-radius:4px;color:#3fb950;font-size:11px">jupyter_server_config.d/jupyter_sec_firewall.json</code>
+        <span>→ tells Jupyter to load the extension</span>
+        <span>→ extension overrides <code style="color:#58a6ff;font-size:11px">kernel_websocket_connection_class</code></span>
+        <span>→ all kernel traffic flows through <code style="color:#f0883e;font-size:11px">SecureZMQChannelsWebsocketConnection</code></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: EVALUATOR -->
+<div id="tab-evaluator" class="tab-content">
+  <div class="diagram-box">
+    <p class="section-title" style="margin-bottom:20px">ASPM Evaluation Pipeline — 7 Stages</p>
+
+    <div class="pipeline">
+      <div class="pipe-step pipe-sast">
+        <div class="pipe-num">STAGE 1</div>
+        <div class="pipe-name">SAST</div>
+        <div class="pipe-tool">bandit<br>semgrep</div>
+      </div>
+      <div class="pipe-step pipe-sca">
+        <div class="pipe-num">STAGE 2</div>
+        <div class="pipe-name">SCA</div>
+        <div class="pipe-tool">pip-audit<br>grype/syft</div>
+      </div>
+      <div class="pipe-step pipe-secrets">
+        <div class="pipe-num">STAGE 3</div>
+        <div class="pipe-name">Secrets</div>
+        <div class="pipe-tool">gitleaks<br>trufflehog</div>
+      </div>
+      <div class="pipe-step pipe-iac">
+        <div class="pipe-num">STAGE 4</div>
+        <div class="pipe-name">IaC</div>
+        <div class="pipe-tool">trivy<br>checkov</div>
+      </div>
+      <div class="pipe-step pipe-aispm">
+        <div class="pipe-num">STAGE 5</div>
+        <div class="pipe-name">AI-SPM</div>
+        <div class="pipe-tool">nb-defense<br>notebook scan</div>
+      </div>
+      <div class="pipe-step pipe-dast">
+        <div class="pipe-num">STAGE 6</div>
+        <div class="pipe-name">DAST</div>
+        <div class="pipe-tool">OWASP ZAP<br>live probe</div>
+      </div>
+      <div class="pipe-step pipe-ai">
+        <div class="pipe-num">STAGE 7</div>
+        <div class="pipe-name">AI Triage</div>
+        <div class="pipe-tool">Gemini 1.5<br>FP filter</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin:8px 0 20px;font-size:11px;color:#484f58;">↓ all findings consolidated ↓</div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:14px;">
+        <div style="font-size:11px;font-weight:700;color:#f0f6fc;margin-bottom:10px">📊 ASPM Dashboard</div>
+        <div style="font-size:11px;color:#8b949e;line-height:1.8">
+          • Unified Markdown report<br>
+          • JSON risk matrix (by category)<br>
+          • AI-suggested fixes per finding<br>
+          • Saved to <code style="color:#58a6ff">output/</code>
+        </div>
+      </div>
+      <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:14px;">
+        <div style="font-size:11px;font-weight:700;color:#f0f6fc;margin-bottom:10px">🔀 Draft GitHub PRs</div>
+        <div style="font-size:11px;color:#8b949e;line-height:1.8">
+          • One PR per HIGH severity finding<br>
+          • New branch auto-created<br>
+          • AI-generated patch committed<br>
+          • PR opened in draft state
+        </div>
+      </div>
+    </div>
+
+    <div class="divider" style="margin:20px 0 16px;"></div>
+    <p class="section-title">What Each Stage Catches</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px;">
+      <div style="background:#1c2128;border:1px solid #2d6e42;border-radius:8px;padding:12px;">
+        <div style="font-size:10px;font-weight:700;color:#3fb950;margin-bottom:6px">SAST — Insecure Code Patterns</div>
+        <div style="font-size:11px;color:#8b949e">shell=True, XSS in templates, SQL injection strings, hardcoded creds in code</div>
+      </div>
+      <div style="background:#1c2128;border:1px solid #1f4a7a;border-radius:8px;padding:12px;">
+        <div style="font-size:10px;font-weight:700;color:#58a6ff;margin-bottom:6px">SCA — Vulnerable Dependencies</div>
+        <div style="font-size:11px;color:#8b949e">CVEs in pip packages, outdated tornado/jinja2/requests versions</div>
+      </div>
+      <div style="background:#1c2128;border:1px solid #7a2020;border-radius:8px;padding:12px;">
+        <div style="font-size:10px;font-weight:700;color:#f85149;margin-bottom:6px">Secrets — Leaked Credentials</div>
+        <div style="font-size:11px;color:#8b949e">API keys, tokens, passwords committed to git history or in source</div>
+      </div>
+      <div style="background:#1c2128;border:1px solid #4a3a7a;border-radius:8px;padding:12px;">
+        <div style="font-size:10px;font-weight:700;color:#d2a8ff;margin-bottom:6px">IaC — Infrastructure Misconfig</div>
+        <div style="font-size:11px;color:#8b949e">Public S3 buckets, Dockerfiles running as root, open security groups</div>
+      </div>
+      <div style="background:#1c2128;border:1px solid #7a4a1f;border-radius:8px;padding:12px;">
+        <div style="font-size:10px;font-weight:700;color:#f0883e;margin-bottom:6px">AI-SPM — Notebook Data Leaks</div>
+        <div style="font-size:11px;color:#8b949e">PII in cell outputs, model weights exposed, prompt injection in notebooks</div>
+      </div>
+      <div style="background:#1c2128;border:1px solid #3a6e6e;border-radius:8px;padding:12px;">
+        <div style="font-size:10px;font-weight:700;color:#56d364;margin-bottom:6px">DAST — Live Attack Simulation</div>
+        <div style="font-size:11px;color:#8b949e">Unauthenticated API endpoints, missing security headers, open redirects</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: FINDINGS -->
+<div id="tab-findings" class="tab-content">
+  <div class="diagram-box">
+    <p class="section-title" style="margin-bottom:16px">Repos Scanned</p>
+    <div class="targets">
+      <div class="target">
+        <div class="target-name">jupyter-server/jupyter_server</div>
+        <div class="target-hash">33f5e2960c51d291e7e089…</div>
+        <div class="stat-row"><span class="stat-label">Bandit total</span><span>1,234</span></div>
+        <div class="stat-row"><span class="stat-label">Bandit actionable</span><span style="color:#f0883e">81</span></div>
+        <div class="stat-row"><span class="stat-label">Semgrep findings</span><span style="color:#d29922">13</span></div>
+        <div class="stat-row"><span class="stat-label">pip-audit CVEs</span><span style="color:#3fb950">0 ✓</span></div>
+      </div>
+      <div class="target">
+        <div class="target-name">jupyterhub/jupyterhub</div>
+        <div class="target-hash">48c21ebdacf0b50e4e538c…</div>
+        <div class="stat-row"><span class="stat-label">Bandit total</span><span>2,058</span></div>
+        <div class="stat-row"><span class="stat-label">Bandit actionable</span><span style="color:#f0883e">183</span></div>
+        <div class="stat-row"><span class="stat-label">Semgrep findings</span><span style="color:#d29922">53</span></div>
+        <div class="stat-row"><span class="stat-label">pip-audit CVEs</span><span style="color:#3fb950">0 ✓</span></div>
+      </div>
+      <div class="target">
+        <div class="target-name">jupyter/security</div>
+        <div class="target-hash">84e4d5d19d14684fb0bef0…</div>
+        <div class="stat-row"><span class="stat-label">Type</span><span>Policy repo</span></div>
+        <div class="stat-row"><span class="stat-label">Content</span><span>Docs only</span></div>
+        <div class="stat-row"><span class="stat-label">SAST</span><span style="color:#8b949e">Not scanned</span></div>
+      </div>
+    </div>
+
+    <div class="divider" style="margin:20px 0 16px;"></div>
+    <p class="section-title">Top Findings by Priority</p>
+    <div class="findings-grid">
+      <div class="finding-card high">
+        <div class="finding-sev">HIGH · BANDIT B701 + SEMGREP</div>
+        <div class="finding-title">Jinja2 autoescape=False (XSS root cause)</div>
+        <div class="finding-loc">serverapp.py:383 · app.py:3210, 3218</div>
+        <div class="finding-desc">Jinja2 Environment created without autoescape=True. All templates inherit this — any user-controlled variable in HTML context is an XSS vector.</div>
+      </div>
+      <div class="finding-card high">
+        <div class="finding-sev">HIGH · BANDIT B602</div>
+        <div class="finding-title">subprocess(shell=True) in proxy.py</div>
+        <div class="finding-loc">jupyterhub/proxy.py:757</div>
+        <div class="finding-desc">Runtime code (not a test or build script) calls Popen with shell=True. If any part of the command is user-influenced, this is command injection.</div>
+      </div>
+      <div class="finding-card high">
+        <div class="finding-sev">HIGH · SEMGREP</div>
+        <div class="finding-title">Template vars in &lt;script&gt; tags (admin.html)</div>
+        <div class="finding-loc">share/jupyterhub/templates/admin.html:5,6,8</div>
+        <div class="finding-desc">Variables injected directly into JavaScript blocks using | safe. If any variable is user-controlled, this is stored XSS in the admin panel.</div>
+      </div>
+      <div class="finding-card medium">
+        <div class="finding-sev">MEDIUM · SEMGREP</div>
+        <div class="finding-title">| safe filter on login.html (2 locations)</div>
+        <div class="finding-loc">jupyter_server/templates/login.html:18,88</div>
+        <div class="finding-desc">Autoescaping explicitly disabled on the login page. Requires careful audit of what data flows into these template variables.</div>
+      </div>
+      <div class="finding-card medium">
+        <div class="finding-sev">MEDIUM · BANDIT B608</div>
+        <div class="finding-title">String-formatted SQL query</div>
+        <div class="finding-loc">services/sessions/sessionmanager.py:411</div>
+        <div class="finding-desc">SQL query constructed via string formatting. If any parameter is user-controlled without sanitization, SQL injection is possible.</div>
+      </div>
+      <div class="finding-card medium">
+        <div class="finding-sev">MEDIUM · SEMGREP</div>
+        <div class="finding-title">Credential path logged</div>
+        <div class="finding-loc">jupyter_server/auth/__main__.py:41</div>
+        <div class="finding-desc">"password stored in config dir: %s" — password value written to logger output. Could expose credentials in log files.</div>
+      </div>
+      <div class="finding-card medium">
+        <div class="finding-sev">MEDIUM · SEMGREP</div>
+        <div class="finding-title">Nginx $http_host in proxy docs</div>
+        <div class="finding-loc">docs/howto/configuration/config-proxy.md</div>
+        <div class="finding-desc">Documentation nginx examples use $http_host (attacker-controlled Host header). Operators copying these examples are vulnerable to Host header injection.</div>
+      </div>
+      <div class="finding-card low">
+        <div class="finding-sev">LOW · SEMGREP</div>
+        <div class="finding-title">Dockerfile runs as root</div>
+        <div class="finding-loc">examples/service-fastapi/Dockerfile:13</div>
+        <div class="finding-desc">No USER directive in example Dockerfile. Container runs as root. Example code gets copied into production deployments.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB: TOOL COMPARISON -->
+<div id="tab-tools" class="tab-content">
+  <div class="diagram-box">
+    <p class="section-title" style="margin-bottom:16px">Tool Characteristics</p>
+    <div class="tool-grid">
+      <div class="tool-card">
+        <div class="tool-name bandit-col">bandit</div>
+        <div class="tool-type">Static AST Pattern Scanner</div>
+        <div class="tool-stat"><span class="tool-stat-label">Network needed</span><span class="tool-stat-val" style="color:#3fb950">No</span></div>
+        <div class="tool-stat"><span class="tool-stat-label">Speed</span><span class="tool-stat-val bandit-col">Fast (~2s)</span></div>
+        <div class="tool-stat"><span class="tool-stat-label">False positives</span><span class="tool-stat-val" style="color:#f85149">High (B101)</span></div>
+        <div class="tool-stat"><span class="tool-stat-label">CVE data</span><span class="tool-stat-val" style="color:#8b949e">No</span></div>
+        <div class="tool-stat"><span class="tool-stat-label">Custom rules</span><span class="tool-stat-val" style="color:#8b949e">Limited</span></div>
+        <div class="tool-stat"><span class="tool-stat-label">Best for</span><span class="tool-stat-val bandit-col">Every commit</span></div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name pipaudit-col">pip-audit</div>
+        <div class="tool-type">Dependency CVE Checker</div>
+        <div class="tool-stat"><span class="tool-stat-label">Network needed</span><span class="tool-stat-val" style="color:#f85149">Yes (osv.dev)</span></div>
+        <div class="tool-stat"><span class="tool-stat-label">Speed</span><span class="tool-stat-val pipaudit-col">Medium</span></div>
+        <div class="tool-stat"><span class="tool-stat-label">False positives</span><span class="tool-stat-val" style="color:#3fb950">Very low</span></div>
+        <div class="tool-stat"><span class="tool-stat-label">CVE data</span><span class="tool-stat-val" style="color:#3fb950">Yes ✓</span></div>
+        <div class="tool-stat"><span class="tool-stat-label">Custom rules</span><span class="tool-stat-val" style="color:#8b949e">No</span></div>
+        <div class="tool-stat"><span class="tool-stat-val pipaudit-col">Dep changes</span></div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name semgrep-col">semgrep</div>
+        <div class="tool-type">Syntactic Pattern + OWASP</div>
+        <div class="tool-stat"><span class="tool-stat-label">Network needed</span><span class="tool-stat-val" style="color:#f85149">Yes (rulesets)</span></div>
+        <div class="tool-stat"><span class="tool-stat-label">Speed</span><span class="tool-stat-val semgrep-col">Slower (~1min)</span></div>
+        <div class="tool-stat"><span class="tool-stat-label">False positives</span><span class="tool-stat-val" style="color:#d29922">Medium</span></div>
+        <div class="tool-stat"><span class="tool-stat-label">CVE data</span><span class="tool-stat-val" style="color:#d29922">Partial</span></div>
+        <div class="tool-stat"><span class="tool-stat-label">Custom rules</span><span class="tool-stat-val" style="color:#3fb950">Yes (YAML)</span></div>
+        <div class="tool-stat"><span class="tool-stat-val semgrep-col">Deep audits / PRs</span></div>
+      </div>
+    </div>
+
+    <div class="divider" style="margin:20px 0 16px;"></div>
+    <p class="section-title">Recommended CI Strategy</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px;">
+      <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:14px;">
+        <div style="font-size:11px;font-weight:700;color:#f0f6fc;margin-bottom:8px">Every PR</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="tag tag-orange">bandit</span>
+          <span style="font-size:11px;color:#8b949e">skip B101</span>
+        </div>
+        <div style="font-size:11px;color:#8b949e">Fast, offline, catches new bad patterns as they land. Add .bandit config to skip assert_used.</div>
+      </div>
+      <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:14px;">
+        <div style="font-size:11px;font-weight:700;color:#f0f6fc;margin-bottom:8px">On Dep Changes</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="tag tag-green">pip-audit</span>
+        </div>
+        <div style="font-size:11px;color:#8b949e">Triggered when requirements.txt or pyproject.toml changes. Low noise, high value CVE data.</div>
+      </div>
+      <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:14px;">
+        <div style="font-size:11px;font-weight:700;color:#f0f6fc;margin-bottom:8px">Weekly / Security PRs</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span class="tag tag-purple">semgrep</span>
+        </div>
+        <div style="font-size:11px;color:#8b949e">Full OWASP Top 10 sweep. Slower but thorough. SARIF output feeds GitHub Code Scanning.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

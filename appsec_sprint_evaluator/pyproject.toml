@@ -14,8 +14,12 @@ dependencies = [
 ]
 requires-python = ">=3.8"
 
-[tool.setuptools]
-packages = ["appsec_sprint_evaluator"]
+# The actual importable package lives one level deeper in
+# appsec_sprint_evaluator/appsec_sprint_evaluator/.
+# Without package_dir, setuptools would look for the package at the root
+# and install an empty shell. This tells it where to actually find it.
+[tool.setuptools.packages.find]
+where = ["."]
 
 [project.scripts]
 appsec-eval = "appsec_sprint_evaluator.cli:main"

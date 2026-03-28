@@ -52,15 +52,21 @@ class SecurityASTNodeVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_Name(self, node):
-        # If any bare name matches a restricted builtin, we flag it.
-        # This handles cases where they might alias eval:
-        # e = eval; e(...)
-        # Wait, flagging just ast.Name eval would break variables named `eval`.
-        # But `eval` shouldn't be overridden in a secure environment either.
-        # Actually, let's just stick to Call and let it slide if they assign it?
-        # No, assigning eval to something else: `a = eval` is caught if `node.id == 'eval'` here.
-        if node.id in ['__builtins__', '__class__', '__subclasses__', '__bases__', '__mro__', 'eval', 'exec', 'compile', 'open', '__import__', 'globals', 'locals']:
-            self.violations.append(f"Access to restricted builtin namespace blocked: {node.id}")
+        # Only flag dangerous builtins that have no legitimate use in notebooks.
+        # Specifically exclude 'open' — it is used constantly for legitimate file I/O
+        # (e.g. `with open('data.csv') as f:`). Blocking bare `open` would break
+        # the vast majority of data science notebooks.
+        # 'globals' and 'locals' are also excluded here because they are used
+        # legitimately (e.g. in metaprogramming helpers). They are still caught
+        # in visit_Call if actually invoked.
+        DANGEROUS_NAMES = {
+            '__builtins__', '__import__',
+            'eval', 'exec', 'compile',
+        }
+        if node.id in DANGEROUS_NAMES:
+            self.violations.append(
+                f"Access to restricted builtin namespace blocked: {node.id}"
+            )
         self.generic_visit(node)
 
 

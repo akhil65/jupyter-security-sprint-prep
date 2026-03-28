@@ -24,10 +24,8 @@ def _jupyter_server_extension_points():
         "app": JupyterSecFirewall
     }]
 
-def load_jupyter_server_extension(server_app):
-    """
-    Called when the extension is loaded.
-    """
-    extension = JupyterSecFirewall()
-    extension.initialize(server_app)
-    logger.info("Jupyter Security Firewall extension loaded successfully.")
+# NOTE: load_jupyter_server_extension (legacy entry point) is intentionally
+# absent. It is incompatible with ExtensionApp — calling
+# extension.initialize(server_app) with a server_app argument would raise
+# a TypeError. All loading is handled via _jupyter_server_extension_points()
+# above, which is the correct modern mechanism.

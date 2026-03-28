@@ -2,7 +2,6 @@ import logging
 import os
 import json
 from .static_parser import Finding
-import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +15,20 @@ class AITriageEngine:
 
         if not self.use_mock and self.api_key:
             try:
+                # Lazy import: google-generativeai is an optional dependency.
+                # If it isn't installed the evaluator still works in mock mode.
+                import google.generativeai as genai
                 genai.configure(api_key=self.api_key)
                 self.model = genai.GenerativeModel('gemini-1.5-flash')
+                self._genai = genai
                 self.is_ready = True
                 logger.info("AI Triage: using Gemini (gemini-1.5-flash).")
+            except ImportError:
+                logger.warning(
+                    "google-generativeai is not installed. Falling back to mock mode. "
+                    "Install it with: pip install google-generativeai"
+                )
+                self.use_mock = True
             except Exception as e:
                 logger.error(f"Failed to initialize Gemini: {e}")
                 self.use_mock = True

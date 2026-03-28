@@ -74,12 +74,71 @@ class SecurityASTNodeVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
 
+def _strip_ipython_magics(code: str) -> tuple:
+    """
+    Pre-processes IPython notebook cell code before AST parsing.
+
+    Returns (cleaned_code, shell_violations) where:
+    - cleaned_code has IPython line/cell magics removed so they don't cause
+      false-positive SyntaxErrors (e.g. %matplotlib inline, %%timeit).
+    - shell_violations is a list of violations for any ! shell-escape lines,
+      which are blocked by policy (shell execution).
+
+    Design rationale:
+    - ! commands (e.g. !cat /etc/passwd, !pip install pkg) execute arbitrary
+      shell commands and are intentionally blocked.
+    - % and %% IPython magics (e.g. %matplotlib inline, %%timeit, %load_ext)
+      do NOT execute shell commands directly and are standard data-science usage.
+      Blocking them would break the vast majority of legitimate notebooks.
+    """
+    shell_violations = []
+    cleaned_lines = []
+
+    for line in code.splitlines():
+        stripped = line.strip()
+
+        if stripped.startswith("!"):
+            # Shell escape — block it.
+            shell_violations.append(
+                f"Shell escape command blocked (use subprocess policy instead): {stripped[:80]}"
+            )
+            # Replace with a no-op comment so the rest of the cell still parses.
+            cleaned_lines.append("# [blocked shell escape]")
+
+        elif stripped.startswith("%%"):
+            # Cell magic (e.g. %%timeit, %%bash) — pass through as a comment.
+            # %%bash is a special case: it executes shell code.
+            magic_name = stripped.split()[0][2:] if len(stripped) > 2 else ""
+            if magic_name in ("bash", "sh", "shell", "script"):
+                shell_violations.append(
+                    f"Cell magic %%{magic_name} blocked (executes shell commands)."
+                )
+            cleaned_lines.append(f"# [cell magic: {stripped[:80]}]")
+
+        elif stripped.startswith("%"):
+            # Line magic (e.g. %matplotlib inline, %load_ext autoreload) — allow.
+            cleaned_lines.append(f"# [line magic: {stripped[:80]}]")
+
+        else:
+            cleaned_lines.append(line)
+
+    return "\n".join(cleaned_lines), shell_violations
+
+
 def analyze_code(code: str) -> list:
     """Parses code and returns a list of security violations."""
+    # Strip IPython magics before AST parsing to avoid false-positive SyntaxErrors
+    # on legitimate % and %% magic lines used in data science notebooks.
+    cleaned_code, magic_violations = _strip_ipython_magics(code)
+
     try:
-        tree = ast.parse(code)
+        tree = ast.parse(cleaned_code)
         visitor = SecurityASTNodeVisitor()
         visitor.visit(tree)
-        return visitor.violations
+        return magic_violations + visitor.violations
     except SyntaxError:
-        return ["SyntaxError: Unable to parse code for security validation."]
+        # Fail closed: if code still won't parse after magic stripping, block it.
+        return magic_violations + [
+            "Blocked: code could not be parsed for security validation "
+            "(invalid Python syntax or unsupported IPython construct)."
+        ]

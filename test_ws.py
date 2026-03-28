@@ -125,7 +125,9 @@ def run_tests():
     # Using /dev/null as a safe target that exists on any Unix system.
     send_execute_request(ws, "f = open('/dev/null'); f.close()")
     reply = get_execute_reply(collect_replies(ws))
-    if reply and reply["content"]["status"] == "error":
+    if reply is None:
+        failures.append("TEST 3 FAILED: no execute_reply received — connection timed out")
+    elif reply["content"]["status"] == "error":
         failures.append(
             "TEST 3 FAILED: open() was blocked — check that 'open' is not in RESTRICTED_BUILTINS"
         )
@@ -136,8 +138,10 @@ def run_tests():
     print("\n[TEST 4] Dangerous builtin: eval('1+1')")
     send_execute_request(ws, "eval('1+1')")
     reply = get_execute_reply(collect_replies(ws))
-    if reply and reply["content"]["status"] != "error":
-        failures.append(f"TEST 4 FAILED: eval() was NOT blocked")
+    if reply is None:
+        failures.append("TEST 4 FAILED: no execute_reply received — connection timed out")
+    elif reply["content"]["status"] != "error":
+        failures.append(f"TEST 4 FAILED: eval() was NOT blocked — status={reply['content']['status']}")
     else:
         print("  PASS: eval() blocked")
 

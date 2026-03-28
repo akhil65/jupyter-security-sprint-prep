@@ -97,12 +97,17 @@ class DynamicAnalysisModule:
             logger.info("Skipping DAST probe for training_playground (no live server).")
             return []
 
-        if self.start_target_app():
-            try:
+        started = self.start_target_app()
+        try:
+            if started:
                 self.run_dast_probe()
-            finally:
-                self.stop_target_app()
-        else:
-            logger.warning("Skipping DAST probe because target app could not be started.")
+            else:
+                logger.warning("Skipping DAST probe because target app could not be started.")
+        finally:
+            # Always attempt cleanup if a subprocess was spawned, even if start_target_app()
+            # returned False because the health check failed after Popen() succeeded.
+            # Without this, the child process leaks if Popen succeeds but the verify
+            # request raises an exception.
+            self.stop_target_app()
 
         return self.findings

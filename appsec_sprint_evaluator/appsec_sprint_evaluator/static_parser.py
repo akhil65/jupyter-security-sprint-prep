@@ -221,8 +221,10 @@ class SCAIntegration:
         with open(json_file) as f:
             data = json.load(f)
 
-        # Placeholder file written before real scan — not real results
-        if isinstance(data.get("dependencies", [{}])[0].get("vulns"), str):
+        # Placeholder file written before real scan — not real results.
+        # Guard against empty dependencies list before indexing to avoid IndexError.
+        dependencies = data.get("dependencies", [])
+        if dependencies and isinstance(dependencies[0].get("vulns"), str):
             return None
 
         findings = []

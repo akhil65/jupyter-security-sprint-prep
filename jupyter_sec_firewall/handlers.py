@@ -2,7 +2,7 @@ import json
 import logging
 import uuid
 import datetime
-from typing import Any, cast
+from typing import Any
 from tornado import ioloop
 
 from jupyter_server.services.kernels.connection.channels import ZMQChannelsWebsocketConnection
@@ -104,22 +104,33 @@ class SecureZMQChannelsWebsocketConnection(ZMQChannelsWebsocketConnection):
                 "content": content
             }
 
-        # 1. Send the execute_reply (status: error) on shell channel
+        # 1. Send the execute_reply (status: error) on shell channel.
+        # execution_count is REQUIRED by the Jupyter messaging protocol even for
+        # error replies — without it JupyterLab leaves the cell counter as [*].
         reply_msg = build_msg("execute_reply", {
             "status": "error",
+            "execution_count": None,
             "ename": "SecurityError",
             "evalue": "Security Policy Violation",
             "traceback": ["Security Policy Violation"] + [f"- {v}" for v in violations]
         }, "shell")
 
-        # 2. Send the error on iopub channel
+        # 2. Send execute_input on iopub so the frontend increments the cell counter.
+        # This must arrive before the error message per the Jupyter protocol spec.
+        code = original_msg.get("content", {}).get("code", "")
+        execute_input_msg = build_msg("execute_input", {
+            "code": code,
+            "execution_count": None,
+        }, "iopub")
+
+        # 3. Send the error on iopub channel
         iopub_msg = build_msg("error", {
             "ename": "SecurityError",
             "evalue": "Security Policy Violation",
             "traceback": ["\x1b[31mSecurity Policy Violation Blocked Execution\x1b[0m"] + [f"\x1b[33m- {v}\x1b[0m" for v in violations]
         }, "iopub")
 
-        # 3. Status messages
+        # 4. Status messages
         status_busy = build_msg("status", {"execution_state": "busy"}, "iopub")
         status_idle = build_msg("status", {"execution_state": "idle"}, "iopub")
 
@@ -148,6 +159,7 @@ class SecureZMQChannelsWebsocketConnection(ZMQChannelsWebsocketConnection):
         def _send():
             try:
                 write(status_busy)
+                write(execute_input_msg)
                 write(iopub_msg)
                 write(reply_msg)
                 write(status_idle)

@@ -1,7 +1,6 @@
 import logging
 import os
 from pathlib import Path
-from github import Github, GithubException
 
 logger = logging.getLogger(__name__)
 
@@ -11,12 +10,21 @@ class GitHubReporter:
     def __init__(self, output_dir: str, github_repo: str = None):
         self.output_dir = Path(output_dir)
         self.github_repo = github_repo
+        self.github = None
 
         token = os.getenv("GITHUB_TOKEN")
         if token:
-            self.github = Github(token)
+            try:
+                # Lazy import: PyGithub is an optional dependency.
+                # Dashboard generation works without it; only PR creation requires it.
+                from github import Github
+                self.github = Github(token)
+            except ImportError:
+                logger.warning(
+                    "PyGithub is not installed. GitHub PR creation will be skipped. "
+                    "Install it with: pip install PyGithub"
+                )
         else:
-            self.github = None
             if self.github_repo:
                 logger.warning("GITHUB_TOKEN not found. Cannot create issues programmatically.")
 
@@ -83,6 +91,12 @@ class GitHubReporter:
     def create_draft_prs(self, findings: list, target_repo_name: str):
         """Uses PyGithub to open Draft PRs with AI patches on the target repository."""
         if not self.github or not self.github_repo:
+            return
+
+        try:
+            from github import GithubException
+        except ImportError:
+            logger.warning("PyGithub not installed — cannot create draft PRs.")
             return
 
         try:

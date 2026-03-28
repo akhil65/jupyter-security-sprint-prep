@@ -157,7 +157,7 @@
       <span class="badge badge-ci">CI / SPRINT TOOL</span>
       <h2>appsec_sprint_evaluator</h2>
     </div>
-    <p>A CLI tool that orchestrates a full <strong style="color:#f0f6fc">ASPM pipeline</strong> — running SAST (bandit/semgrep), SCA (pip-audit/grype), secret detection, IaC scanning, DAST probing, and AI-assisted triage — then consolidates everything into a unified dashboard and optionally opens draft GitHub PRs with suggested fixes.</p>
+    <p>A CLI tool that orchestrates a full security evaluation pipeline — running SAST (bandit/semgrep), SCA (pip-audit), secret detection, IaC scanning, DAST probing, and AI-assisted triage — then consolidates everything into a unified dashboard and optionally opens draft GitHub PRs with suggested fixes. Secrets, IaC, and AI-SPM stages are stubs; SAST and SCA are fully integrated.</p>
     <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
       <span class="tag tag-blue">Multi-Tool Pipeline</span>
       <span class="tag tag-purple">AI Triage (Gemini)</span>
@@ -260,8 +260,8 @@
         <div style="font-size:11px;font-weight:700;color:#f0883e;margin-bottom:8px">RESTRICTED BUILTINS</div>
         <div style="font-size:11px;color:#8b949e;font-family:monospace;line-height:1.8">
           eval · exec · compile<br>
-          open · globals · locals<br>
-          __import__ · getattr<br>setattr · delattr
+          __import__ · getattr<br>setattr · delattr<br>
+          <span style="font-size:10px;color:#484f58;font-family:sans-serif">open() not blocked — needed<br>for data science file I/O</span>
         </div>
       </div>
       <div style="background:#1c2128;border:1px solid #30363d;border-radius:8px;padding:14px;">
@@ -300,7 +300,7 @@
       <div class="pipe-step pipe-sca">
         <div class="pipe-num">STAGE 2</div>
         <div class="pipe-name">SCA</div>
-        <div class="pipe-tool">pip-audit<br>grype/syft</div>
+        <div class="pipe-tool">pip-audit</div>
       </div>
       <div class="pipe-step pipe-secrets">
         <div class="pipe-num">STAGE 3</div>
@@ -320,7 +320,7 @@
       <div class="pipe-step pipe-dast">
         <div class="pipe-num">STAGE 6</div>
         <div class="pipe-name">DAST</div>
-        <div class="pipe-tool">OWASP ZAP<br>live probe</div>
+        <div class="pipe-tool">custom<br>live probe</div>
       </div>
       <div class="pipe-step pipe-ai">
         <div class="pipe-num">STAGE 7</div>
@@ -376,8 +376,8 @@
         <div style="font-size:11px;color:#8b949e">PII in cell outputs, model weights exposed, prompt injection in notebooks</div>
       </div>
       <div style="background:#1c2128;border:1px solid #3a6e6e;border-radius:8px;padding:12px;">
-        <div style="font-size:10px;font-weight:700;color:#56d364;margin-bottom:6px">DAST — Live Attack Simulation</div>
-        <div style="font-size:11px;color:#8b949e">Unauthenticated API endpoints, missing security headers, open redirects</div>
+        <div style="font-size:10px;font-weight:700;color:#56d364;margin-bottom:6px">DAST — Live Server Probe</div>
+        <div style="font-size:11px;color:#8b949e">Unauthenticated /api/kernels access, missing security headers (CSP, X-Content-Type-Options, X-Frame-Options)</div>
       </div>
     </div>
   </div>
@@ -408,8 +408,9 @@
         <div class="target-name">jupyter/security</div>
         <div class="target-hash">84e4d5d19d14684fb0bef0…</div>
         <div class="stat-row"><span class="stat-label">Type</span><span>Policy repo</span></div>
-        <div class="stat-row"><span class="stat-label">Content</span><span>Docs only</span></div>
-        <div class="stat-row"><span class="stat-label">SAST</span><span style="color:#8b949e">Not scanned</span></div>
+        <div class="stat-row"><span class="stat-label">Bandit (tools/)</span><span style="color:#d29922">18 findings</span></div>
+        <div class="stat-row"><span class="stat-label">Actionable</span><span style="color:#f0883e">3 MEDIUM</span></div>
+        <div class="stat-row"><span class="stat-label">Issue</span><span style="color:#8b949e">B113 no timeout</span></div>
       </div>
     </div>
 

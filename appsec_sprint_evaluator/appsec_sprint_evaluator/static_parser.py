@@ -173,6 +173,11 @@ class SCAIntegration:
     For real repos (jupyter_server, jupyterhub): reads scans/pip-audit/<repo>.json.
     For the training_playground: returns a demo finding based on requirements.txt
     pinning known-vulnerable versions of requests and urllib3.
+
+    Args:
+        scans_dir: Base directory for scan output files (default: "scans").
+                   Should match the value passed to StaticAnalysisParser so all
+                   modules resolve files from the same root.
     """
 
     TRAINING_EXAMPLE = Finding(
@@ -191,6 +196,9 @@ class SCAIntegration:
         ),
         raw_data={"demo": True, "package": "requests", "version": "2.28.1"},
     )
+
+    def __init__(self, scans_dir: str = "scans"):
+        self.scans_dir = Path(scans_dir)
 
     def run_sca(self, target_repo: str) -> List[Finding]:
         logger.info("Running SCA Analysis (pip-audit)...")
@@ -214,7 +222,7 @@ class SCAIntegration:
         return []
 
     def _parse_pip_audit_json(self, repo_name: str):
-        json_file = Path("scans") / "pip-audit" / f"{repo_name}.json"
+        json_file = self.scans_dir / "pip-audit" / f"{repo_name}.json"
         if not json_file.exists():
             return None
 

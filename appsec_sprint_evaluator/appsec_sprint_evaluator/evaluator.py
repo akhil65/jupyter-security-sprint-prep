@@ -17,7 +17,8 @@ def run_evaluation(args):
     findings.extend(sast_parser.collect_findings(target_repo))
 
     # 2. Software Composition Analysis (SCA)
-    sca_module = SCAIntegration()
+    # Pass the same scans_dir as SAST so both resolve from the same root directory.
+    sca_module = SCAIntegration(scans_dir="scans")
     findings.extend(sca_module.run_sca(target_repo))
 
     # 3. Secret Detection

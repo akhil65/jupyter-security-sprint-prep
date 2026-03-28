@@ -83,7 +83,17 @@ class GitHubReporter:
                 ai_analysis = finding.raw_data.get('ai_analysis', {})
                 if not ai_analysis.get('is_false_positive', False):
                     suggested_fix = ai_analysis.get('suggested_fix', 'Manual review required.')
-                    f.write(f"**AI Suggested Fix:**\n```python\n{suggested_fix}\n```\n\n")
+                    # Only wrap in a python code fence if the fix looks like actual code.
+                    # Plain-English suggestions (e.g. "Please review this manually.") should
+                    # not be rendered as a code block — it looks broken in the dashboard.
+                    looks_like_code = any(
+                        indicator in suggested_fix
+                        for indicator in ('def ', 'import ', '=', '()', '#', 'return ', 'class ')
+                    )
+                    if looks_like_code:
+                        f.write(f"**AI Suggested Fix:**\n```python\n{suggested_fix}\n```\n\n")
+                    else:
+                        f.write(f"**AI Suggested Fix:** {suggested_fix}\n\n")
                 f.write("---\n")
 
         logger.info("Dashboard generation complete.")
@@ -102,11 +112,12 @@ class GitHubReporter:
         try:
             repo = self.github.get_repo(self.github_repo)
 
-            # For proof of concept, just process one HIGH severity finding to create a PR
-            high_findings = [f for f in findings if f.severity == "HIGH"]
+            # For proof of concept, process one CRITICAL or HIGH severity finding.
+            # CRITICAL is higher priority than HIGH — check it first.
+            high_findings = [f for f in findings if f.severity in ("CRITICAL", "HIGH")]
 
             if not high_findings:
-                logger.info("No HIGH severity findings to open PRs for.")
+                logger.info("No CRITICAL or HIGH severity findings to open PRs for.")
                 return
 
             # Pick the first one

@@ -98,8 +98,9 @@ def run_tests():
     print("\n[TEST 1] Safe code: print('hello')")
     send_execute_request(ws, "print('hello')")
     reply = get_execute_reply(collect_replies(ws))
-    assert reply is not None, "No execute_reply received for safe code"
-    if reply["content"]["status"] != "ok":
+    if reply is None:
+        failures.append("TEST 1 FAILED: no execute_reply received — connection timed out")
+    elif reply["content"]["status"] != "ok":
         failures.append(f"TEST 1 FAILED: safe code was blocked — status={reply['content']['status']}")
     else:
         print("  PASS: safe code executed successfully")
@@ -108,15 +109,18 @@ def run_tests():
     print("\n[TEST 2] Malicious code: import os")
     send_execute_request(ws, "import os")
     reply = get_execute_reply(collect_replies(ws))
-    assert reply is not None, "No execute_reply received for malicious code"
-    if reply["content"]["status"] != "error":
+    if reply is None:
+        failures.append("TEST 2 FAILED: no execute_reply received — connection timed out")
+    elif reply["content"]["status"] != "error":
         failures.append(
             f"TEST 2 FAILED: 'import os' was NOT blocked — status={reply['content']['status']}"
         )
     else:
         ename = reply["content"].get("ename", "")
-        assert ename == "SecurityError", f"Expected SecurityError, got {ename}"
-        print(f"  PASS: 'import os' blocked with {ename}")
+        if ename != "SecurityError":
+            failures.append(f"TEST 2 FAILED: expected SecurityError ename, got '{ename}'")
+        else:
+            print(f"  PASS: 'import os' blocked with {ename}")
 
     # --- Test 3: open() should be allowed (legitimate data science file I/O) ---
     print("\n[TEST 3] Legitimate file I/O: open() should not be blocked")
@@ -144,6 +148,36 @@ def run_tests():
         failures.append(f"TEST 4 FAILED: eval() was NOT blocked — status={reply['content']['status']}")
     else:
         print("  PASS: eval() blocked")
+
+    # --- Test 5: Shell escape (!) should be blocked ---
+    print("\n[TEST 5] Shell escape: !echo hello")
+    send_execute_request(ws, "!echo hello")
+    reply = get_execute_reply(collect_replies(ws))
+    if reply is None:
+        failures.append("TEST 5 FAILED: no execute_reply received — connection timed out")
+    elif reply["content"]["status"] != "error":
+        failures.append(
+            f"TEST 5 FAILED: '!echo hello' was NOT blocked — status={reply['content']['status']}"
+        )
+    else:
+        print("  PASS: shell escape '!' blocked")
+
+    # --- Test 6: IPython line magic should pass through ---
+    print("\n[TEST 6] IPython line magic: %matplotlib inline should not be blocked")
+    # %matplotlib inline is one of the most common notebook magic commands.
+    # The firewall strips it before AST analysis — it must NOT be treated as a violation.
+    send_execute_request(ws, "%matplotlib inline\nx = 1 + 1")
+    reply = get_execute_reply(collect_replies(ws))
+    if reply is None:
+        failures.append("TEST 6 FAILED: no execute_reply received — connection timed out")
+    elif reply["content"]["status"] == "error":
+        ename = reply["content"].get("ename", "")
+        failures.append(
+            f"TEST 6 FAILED: '%matplotlib inline' was blocked with {ename} — "
+            "line magics must pass through"
+        )
+    else:
+        print("  PASS: IPython line magic allowed")
 
     ws.close()
 

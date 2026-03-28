@@ -33,14 +33,14 @@ class AITriageEngine:
             )
 
     def _mock_triage(self, finding: Finding) -> dict:
-        """Simulates an LLM response."""
+        """Simulates an LLM response with simple heuristic rules."""
         logger.debug(f"[MOCK] AI analyzing finding: {finding.issue_id} in {finding.file_path}")
-        # Very simple heuristic mock logic
-        if finding.tool == 'bandit' and 'assert_used' in finding.description:
-            return {"is_false_positive": True, "reason": "Assertions in test files are expected."}
-        elif finding.tool == 'semgrep' and 'template-unescaped-with-safe' in finding.description:
-            return {"is_false_positive": False, "suggested_fix": "Remove the '| safe' filter in Jinja2 templates or validate input."}
-
+        if finding.tool == 'semgrep' and 'template-unescaped-with-safe' in finding.description:
+            return {
+                "is_false_positive": False,
+                "reason": "| safe on user-facing template disables escaping.",
+                "suggested_fix": "Remove the '| safe' filter in Jinja2 templates or validate input.",
+            }
         return {"is_false_positive": False, "suggested_fix": "Please review this manually."}
 
     def _gemini_triage(self, finding: Finding) -> dict:
@@ -85,7 +85,6 @@ class AITriageEngine:
 
             # Filter out false positives
             if not analysis.get('is_false_positive', False):
-                finding.raw_data['suggested_fix'] = analysis.get('suggested_fix', '')
                 triaged.append(finding)
 
         logger.info(f"AI Triage completed. {len(triaged)} actionable true positives remaining.")

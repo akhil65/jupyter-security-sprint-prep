@@ -2,7 +2,7 @@ import time
 import sys
 import os
 from colorama import init, Fore, Style
-from .static_parser import StaticAnalysisParser, SCAIntegration, SecretScannerIntegration, IaCScannerIntegration
+from .static_parser import StaticAnalysisParser, SCAIntegration, SecretScannerIntegration, IaCScannerIntegration, AISPMScanner
 from .ai_reviewer import AITriageEngine
 from .github_reporter import GitHubReporter
 
@@ -81,12 +81,25 @@ def run_tutorial():
 
     step_prompt()
 
-    # 5. AI Triage
-    print_slow(Fore.MAGENTA + Style.BRIGHT + "[Step 5] AI-Assisted Triage and Remediation")
+    # 5. AI-SPM
+    print_slow(Fore.GREEN + "[Step 5] AI Security Posture Management (AI-SPM, stub demo)")
+    print_slow("AI-SPM scanner is a stub — demonstrates notebook PII/credential detection.")
+    print_slow("In production: run `nbdefense scan` against your notebooks.")
+    time.sleep(1)
+    aispm = AISPMScanner()
+    findings_aispm = aispm.run_aispm("training_playground")
+    for f in findings_aispm:
+        print(Fore.RED + f" ✗ Found: {f.issue_id} in {f.file_path}:{f.line_number}")
+        print(Fore.WHITE + f"   {f.description}")
+
+    step_prompt()
+
+    # 6. AI Triage
+    print_slow(Fore.MAGENTA + Style.BRIGHT + "[Step 6] AI-Assisted Triage and Remediation")
     print_slow("The raw scanners found multiple vulnerabilities. Some might be false positives.")
     print_slow("Sending context to the AI Triage Engine (Mock/Gemini) to evaluate...")
 
-    findings = findings_sast + findings_sca + findings_sec + findings_iac
+    findings = findings_sast + findings_sca + findings_sec + findings_iac + findings_aispm
     ai = AITriageEngine(use_mock=True)
 
     time.sleep(2)
@@ -96,8 +109,8 @@ def run_tutorial():
 
     step_prompt()
 
-    # 6. GitHub Integration
-    print_slow(Fore.GREEN + "[Step 6] Automated GitHub Contribution (Draft PRs)")
+    # 7. GitHub Integration
+    print_slow(Fore.GREEN + "[Step 7] Automated GitHub Contribution (Draft PRs)")
     print_slow("The final step is to orchestrate these fixes back to the maintainers.")
     print_slow("The tool generates a unified security findings dashboard (Markdown/JSON) and opens a Draft PR.")
     time.sleep(1)

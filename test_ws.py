@@ -2,7 +2,7 @@
 Integration test for jupyter_sec_firewall — legacy JSON WebSocket protocol.
 
 Prerequisites:
-  pip install websocket-client   # not in pyproject.toml yet — add it!
+  pip install websocket-client   # already in pyproject.toml dependencies
   jupyter server --IdentityProvider.token=testtoken --port=8888 &
   # Wait ~3s for the server to start, then run:
   python test_ws.py
@@ -24,7 +24,7 @@ try:
 except ImportError:
     sys.exit(
         "Missing dependency: pip install websocket-client\n"
-        "Also add 'websocket-client' to jupyter_sec_firewall's pyproject.toml dependencies."
+        "(websocket-client is listed in pyproject.toml — run 'pip install -e .' from the repo root)"
     )
 
 BASE_URL = "http://127.0.0.1:8888"

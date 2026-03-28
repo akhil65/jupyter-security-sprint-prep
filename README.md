@@ -14,7 +14,7 @@ The extension parses the Python Abstract Syntax Tree (AST) of the incoming code 
 * **Real-Time Interception:** Hooks into the backend Jupyter Server WebSocket connection (`ZMQChannelsWebsocketConnection`) to intercept `execute_request` messages.
 * **Protocol Aware:** Supports both legacy JSON WebSockets and the modern multiplexed `v1.kernel.websocket.jupyter.org` binary subprotocol.
 * **AST Analyzer:** Analyzes the Python code for:
-  * Restricted modules (e.g., `os`, `subprocess`, `socket`, `pty`, `importlib`, `sys`, `shutil`).
+  * Restricted modules (`os`, `subprocess`, `socket`, `pty`, `importlib`, `sys`, `shutil`, `urllib`, `http`, `requests`).
   * Restricted builtins and dynamic code execution (`eval`, `exec`, `compile`, `__import__`). Note: `open` is intentionally **not** blocked to preserve legitimate data science file I/O.
   * Dangerous dunder attribute access (`__class__`, `__subclasses__`, `__mro__`, `__bases__`) to prevent sandbox escapes via Python's object hierarchy.
   * Blocks non-Python syntax (e.g., IPython magics like `!cat /etc/passwd`) by failing closed on `SyntaxError`.

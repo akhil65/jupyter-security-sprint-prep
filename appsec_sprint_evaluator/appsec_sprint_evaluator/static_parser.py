@@ -1,3 +1,4 @@
+import dataclasses
 import json
 import logging
 from pathlib import Path
@@ -149,7 +150,14 @@ class StaticAnalysisParser:
                 f"Returning {len(self.TRAINING_SAST_EXAMPLES)} pre-canned SAST demo findings "
                 "for training_playground."
             )
-            return list(self.TRAINING_SAST_EXAMPLES)
+            # Return new Finding instances with a fresh raw_data dict each time.
+            # ai_reviewer.triage_findings() mutates raw_data in-place (adds
+            # 'ai_analysis' key). Without this copy, repeated calls in the same
+            # process accumulate stale triage data in the shared class-level objects.
+            return [
+                dataclasses.replace(f, raw_data=dict(f.raw_data))
+                for f in self.TRAINING_SAST_EXAMPLES
+            ]
 
         findings = []
         findings.extend(self.parse_bandit_json(target_repo))

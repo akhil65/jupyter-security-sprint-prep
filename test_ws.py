@@ -118,18 +118,19 @@ def run_tests():
         assert ename == "SecurityError", f"Expected SecurityError, got {ename}"
         print(f"  PASS: 'import os' blocked with {ename}")
 
-    # --- Test 3: open() should be allowed (legitimate file I/O) ---
-    print("\n[TEST 3] Legitimate file I/O: open() call")
-    send_execute_request(ws, "f = open.__class__.__name__")  # access the name, not a real open
+    # --- Test 3: open() should be allowed (legitimate data science file I/O) ---
+    print("\n[TEST 3] Legitimate file I/O: open() should not be blocked")
+    # open() is intentionally excluded from RESTRICTED_BUILTINS so data science
+    # notebooks can read files normally (e.g. `with open('data.csv') as f:`).
+    # Using /dev/null as a safe target that exists on any Unix system.
+    send_execute_request(ws, "f = open('/dev/null'); f.close()")
     reply = get_execute_reply(collect_replies(ws))
-    # open() itself (as a call) is restricted, but referencing the type name is not.
-    # This is a canary: if this is blocked, visit_Name is still too aggressive.
     if reply and reply["content"]["status"] == "error":
         failures.append(
-            "TEST 3 FAILED: legitimate name reference was incorrectly blocked by visit_Name"
+            "TEST 3 FAILED: open() was blocked — check that 'open' is not in RESTRICTED_BUILTINS"
         )
     else:
-        print("  PASS: non-call name reference not over-blocked")
+        print("  PASS: open() allowed for legitimate file I/O")
 
     # --- Test 4: eval() should be blocked ---
     print("\n[TEST 4] Dangerous builtin: eval('1+1')")

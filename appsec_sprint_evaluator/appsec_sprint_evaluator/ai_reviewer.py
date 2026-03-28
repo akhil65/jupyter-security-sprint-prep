@@ -19,11 +19,18 @@ class AITriageEngine:
                 genai.configure(api_key=self.api_key)
                 self.model = genai.GenerativeModel('gemini-1.5-flash')
                 self.is_ready = True
+                logger.info("AI Triage: using Gemini (gemini-1.5-flash).")
             except Exception as e:
                 logger.error(f"Failed to initialize Gemini: {e}")
                 self.use_mock = True
         else:
             self.use_mock = True
+
+        if self.use_mock:
+            logger.warning(
+                "AI Triage is running in MOCK mode — results are heuristic stubs, not real LLM analysis. "
+                "Set the GEMINI_API_KEY environment variable to enable real AI triage."
+            )
 
     def _mock_triage(self, finding: Finding) -> dict:
         """Simulates an LLM response."""

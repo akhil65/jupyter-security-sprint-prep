@@ -6,9 +6,13 @@ RESTRICTED_MODULES = [
     'sys', 'shutil', 'urllib', 'http', 'requests'
 ]
 
-# Define restricted builtins
+# Define restricted builtins — called directly in visit_Call.
+# NOTE: 'open' is intentionally excluded. Blocking open() would break
+# legitimate data science notebooks (e.g. `with open('data.csv') as f:`).
+# 'globals' and 'locals' are also excluded — they have legitimate uses
+# in metaprogramming. Both are still flagged by visit_Name if referenced bare.
 RESTRICTED_BUILTINS = [
-    'eval', 'exec', 'compile', 'open', 'globals', 'locals',
+    'eval', 'exec', 'compile',
     '__import__', 'getattr', 'setattr', 'delattr'
 ]
 

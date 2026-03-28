@@ -54,8 +54,9 @@ def run_tutorial():
     step_prompt()
 
     # 3. Secrets
-    print_slow(Fore.GREEN + "[Step 3] Layered Secret Detection")
-    print_slow("Running Gitleaks (regex) followed by TruffleHog (active API verification)...")
+    print_slow(Fore.GREEN + "[Step 3] Secret Detection (stub demo)")
+    print_slow("Secrets scanner is a stub — demonstrates the detection pattern using a known fake key.")
+    print_slow("In production: run `gitleaks detect` or `trufflehog git` for real secret scanning.")
     time.sleep(1)
     sec = SecretScannerIntegration()
     findings_sec = sec.run_secrets("training_playground")
@@ -66,8 +67,9 @@ def run_tutorial():
     step_prompt()
 
     # 4. IaC
-    print_slow(Fore.GREEN + "[Step 4] Infrastructure as Code (IaC) Scanning")
-    print_slow("Scanning `main.tf` with Trivy and Checkov for misconfigurations...")
+    print_slow(Fore.GREEN + "[Step 4] Infrastructure as Code (IaC) Scanning (stub demo)")
+    print_slow("IaC scanner is a stub — demonstrates the pattern using a known-bad main.tf.")
+    print_slow("In production: run `trivy config .` or `checkov -d .` against your Terraform.")
     time.sleep(1)
     iac = IaCScannerIntegration()
     findings_iac = iac.run_iac("training_playground")
@@ -97,8 +99,8 @@ def run_tutorial():
     print_slow("The tool generates a unified ASPM Dashboard (Markdown/JSON) and opens a Draft PR.")
     time.sleep(1)
 
-    print(Fore.BLUE + "   -> Generating `output/training_playground_dashboard.md`...")
-    print(Fore.BLUE + "   -> Generating `output/training_playground_dashboard.json`...")
+    print(Fore.BLUE + "   -> Generating `output/training_playground_aspm_dashboard.md`...")
+    print(Fore.BLUE + "   -> Generating `output/training_playground_aspm_dashboard.json`...")
     print(Fore.BLUE + "   -> (Simulated) Opened GitHub Draft PR: 'Fix: Address High-Severity ASPM Findings'")
 
     print_slow(Fore.CYAN + Style.BRIGHT + "\n============================================================")

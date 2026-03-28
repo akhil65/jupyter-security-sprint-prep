@@ -46,7 +46,6 @@ class SecureZMQChannelsWebsocketConnection(ZMQChannelsWebsocketConnection):
                 content = msg.get('content', {})
             else:
                 if isinstance(ws_msg, bytes):
-                    from jupyter_server.services.kernels.connection.channels import deserialize_binary_message
                     msg = deserialize_binary_message(ws_msg)
                 else:
                     msg = json.loads(ws_msg)

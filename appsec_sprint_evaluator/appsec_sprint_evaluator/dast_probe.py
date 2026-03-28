@@ -84,7 +84,11 @@ class DynamicAnalysisModule:
         if self.process:
             logger.info("Stopping local target app...")
             self.process.terminate()
-            self.process.wait()
+            try:
+                self.process.wait(timeout=10)
+            except Exception:
+                logger.warning("Target app did not exit cleanly within timeout — killing.")
+                self.process.kill()
 
     def run_probe(self) -> list:
         if self.start_target_app():

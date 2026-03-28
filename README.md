@@ -8,16 +8,16 @@ While baseline static analysis tools (like Bandit, Semgrep, and pip-audit) were 
 
 Instead of just scanning notebooks after they are written, `jupyter_sec_firewall` is a Jupyter Server Extension that acts as an active execution firewall. It intercepts code that a user attempts to run in a notebook cell *before* it reaches the IPython kernel over ZeroMQ.
 
-The extension parses the Python Abstract Syntax Tree (AST) of the incoming code and blocks malicious or unauthorized commands (such as unauthorized shell executions, accessing restricted modules, or spawning reverse shells) in real time. If a violation is detected, the execution is blocked, and an error is returned directly to the user's notebook cell mimicking a standard kernel error.
+The extension parses the Python Abstract Syntax Tree (AST) of the incoming code and blocks malicious or unauthorized commands (such as unauthorized shell executions, restricted module imports, and dangerous dunder-based sandbox escapes) in real time. If a violation is detected, the execution is blocked, and an error is returned directly to the user's notebook cell mimicking a standard kernel error.
 
 ### Key Features
 * **Real-Time Interception:** Hooks into the backend Jupyter Server WebSocket connection (`ZMQChannelsWebsocketConnection`) to intercept `execute_request` messages.
 * **Protocol Aware:** Supports both legacy JSON WebSockets and the modern multiplexed `v1.kernel.websocket.jupyter.org` binary subprotocol.
 * **AST Analyzer:** Analyzes the Python code for:
   * Restricted modules (e.g., `os`, `subprocess`, `socket`, `pty`, `importlib`, `sys`, `shutil`).
-  * Restricted builtins and dynamic code execution (`eval`, `exec`, `compile`, `open`, `__import__`).
-  * Dangerous dunder attribute access (`__class__`, `__subclasses__`, `__mro__`, `__bases__`) to prevent sandbox escapes.
-  * Blocks non-Python Syntax (e.g., IPython magics like `!cat /etc/passwd`) by failing closed on `SyntaxError`.
+  * Restricted builtins and dynamic code execution (`eval`, `exec`, `compile`, `__import__`). Note: `open` is intentionally **not** blocked to preserve legitimate data science file I/O.
+  * Dangerous dunder attribute access (`__class__`, `__subclasses__`, `__mro__`, `__bases__`) to prevent sandbox escapes via Python's object hierarchy.
+  * Blocks non-Python syntax (e.g., IPython magics like `!cat /etc/passwd`) by failing closed on `SyntaxError`.
 * **Fail-Closed Design:** If a message is malformed or unparseable, it is dropped and not forwarded to the ZeroMQ kernel channels.
 * **Seamless UI Integration:** When code is blocked, the extension synthesizes `execute_reply` and `error` messages back to the frontend, so the user sees a clear "Security Policy Violation" error inline in their notebook.
 

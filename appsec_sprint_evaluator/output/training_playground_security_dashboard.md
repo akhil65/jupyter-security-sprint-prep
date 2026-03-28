@@ -62,7 +62,7 @@ urllib3>=1.26.17
 ### 4. [CRITICAL] SECRETS (trufflehog): exposed-aws-key-demo
 **Location:** `training_playground/vulnerable_app.py:11`
 
-**Description:** [TRAINING DEMO] Hardcoded AWS Access Key ID pattern detected. In production: run `gitleaks detect` or `trufflehog git` against the repo.
+**Description:** [TRAINING DEMO] Hardcoded AWS Access Key ID pattern detected (AKIA4HGEXAMPLEFAKE99 at line 11). In production: run `gitleaks detect` or `trufflehog git` against the repo.
 
 **AI Suggested Fix:**
 ```python

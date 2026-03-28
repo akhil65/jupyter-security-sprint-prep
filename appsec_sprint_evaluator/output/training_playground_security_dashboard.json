@@ -53,7 +53,7 @@
       "severity": "CRITICAL",
       "file_path": "training_playground/vulnerable_app.py",
       "line_number": 11,
-      "description": "[TRAINING DEMO] Hardcoded AWS Access Key ID pattern detected. Key is intentionally fake (AKIA4HGEXAMPLEFAKE99). In production: run gitleaks detect or trufflehog git for real secret scanning.",
+      "description": "[TRAINING DEMO] Hardcoded AWS Access Key ID pattern detected (AKIA4HGEXAMPLEFAKE99 at line 11). In production: run `gitleaks detect` or `trufflehog git` against the repo.",
       "ai_triage": {
         "is_false_positive": false,
         "suggested_fix": "Never hardcode credentials. Use environment variables: aws_secret = os.environ['AWS_SECRET_ACCESS_KEY']"

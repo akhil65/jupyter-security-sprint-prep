@@ -62,6 +62,24 @@ class StaticAnalysisParser:
         self.notes_dir = Path(notes_dir)
         self.scans_dir = Path(scans_dir)
 
+    @staticmethod
+    def _relativize_path(file_path: str, repo_name: str) -> str:
+        """
+        Strip machine-specific absolute prefixes from scanner output paths.
+
+        Bandit and semgrep embed the absolute scan-time path (e.g.
+        '/Users/akhil.au/.../repos/jupyter_server/jupyter_server/foo.py').
+        We normalize to a repo-relative form
+        ('jupyter_server/jupyter_server/foo.py') so that dashboard output
+        is portable and not tied to the machine where scans were run.
+        """
+        import re
+        # Match anything up to and including '/repos/<repo_name>/' and strip it,
+        # replacing with '<repo_name>/'.
+        pattern = rf'^.*/repos/{re.escape(repo_name)}/'
+        normalized = re.sub(pattern, f'{repo_name}/', file_path)
+        return normalized
+
     def parse_bandit_json(self, repo_name: str) -> List[Finding]:
         """
         Parse bandit's machine-readable JSON output directly.
@@ -91,7 +109,7 @@ class StaticAnalysisParser:
                 repo=repo_name,
                 issue_id=result.get("test_id", ""),
                 severity=severity,
-                file_path=result.get("filename", ""),
+                file_path=self._relativize_path(result.get("filename", ""), repo_name),
                 line_number=result.get("line_number", 0),
                 description=f"[{result.get('test_id')}] {result.get('test_name')}: {result.get('issue_text')}",
                 raw_data=result,
@@ -131,7 +149,7 @@ class StaticAnalysisParser:
                 repo=repo_name,
                 issue_id=result.get("check_id", "").split(".")[-1],
                 severity=severity,
-                file_path=result.get("path", ""),
+                file_path=self._relativize_path(result.get("path", ""), repo_name),
                 line_number=result.get("start", {}).get("line", 0),
                 description=result.get("extra", {}).get("message", ""),
                 raw_data=result,

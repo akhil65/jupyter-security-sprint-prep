@@ -95,3 +95,30 @@ The overwhelming majority of findings are B101 (assert_used) in test files — a
 |----------------|----------------------|
 | jupyter_server | 81                   |
 | jupyterhub     | 183                  |
+
+---
+
+## jupyter/security — `tools/` Directory Scan
+
+**Scan date:** 2026-03-27
+**Path scanned:** `repos/security/tools/`
+**Raw results:** `scans/bandit/security_tools.json`
+**Total findings:** 18 (0 HIGH, 3 MEDIUM, 15 LOW)
+
+### MEDIUM Severity (3 findings)
+
+| Test ID | Location | Issue |
+|---------|----------|-------|
+| B113 | `tools/tide/tide.py:20` | HTTP request without timeout — `requests.get()` call |
+| B113 | `tools/tide/tide.py:52` | HTTP request without timeout — `requests.get()` call |
+| B113 | `tools/all_repos.py:42` | HTTP request without timeout — `requests.get()` call |
+
+**Context:** All three are B113 (request_without_timeout) in the `tide` tool and `all_repos.py`. These tools query GitHub's API to track vulnerability disclosure status across Jupyter repos. Without a timeout, any network hang will block the process indefinitely — a reliability concern for automated CI/CD use rather than a direct security exploit. Fix: add `timeout=30` (or appropriate value) to each `requests.get()` call.
+
+### LOW Severity (15 findings)
+
+Predominantly B101 (assert_used) in test helpers and B110 (try/except/pass) patterns. No action required.
+
+### Notes
+
+The `jupyter/security` repo is not an application codebase — it contains governance documents and lightweight tooling for coordinating security disclosures across the Jupyter ecosystem. The bandit surface area is intentionally small. The 3 MEDIUM findings are in operational tooling that could run in CI; adding timeouts is a low-effort hardening step.

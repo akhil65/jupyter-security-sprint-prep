@@ -195,9 +195,11 @@ class SCAIntegration:
     def run_sca(self, target_repo: str) -> List[Finding]:
         logger.info("Running SCA Analysis (pip-audit)...")
 
-        # Training playground: return demo finding (no real pip-audit JSON for it)
+        # Training playground: return a fresh copy of the demo finding so that
+        # ai_reviewer.triage_findings() can safely mutate raw_data without
+        # corrupting the shared class-level object across repeated calls.
         if target_repo == "training_playground":
-            return [self.TRAINING_EXAMPLE]
+            return [dataclasses.replace(self.TRAINING_EXAMPLE, raw_data=dict(self.TRAINING_EXAMPLE.raw_data))]
 
         # Read real pip-audit results if available
         findings = self._parse_pip_audit_json(target_repo)
@@ -260,9 +262,10 @@ class SecretScannerIntegration:
         issue_id="exposed-aws-key-demo",
         severity="CRITICAL",
         file_path="training_playground/vulnerable_app.py",
-        line_number=5,
+        line_number=11,
         description=(
-            "[TRAINING DEMO] Hardcoded AWS Access Key ID pattern detected. "
+            "[TRAINING DEMO] Hardcoded AWS Access Key ID pattern detected "
+            "(AKIA4HGEXAMPLEFAKE99 at line 11). "
             "In production: run `gitleaks detect` or `trufflehog git` against the repo."
         ),
         raw_data={"demo": True, "active": False},
@@ -271,7 +274,7 @@ class SecretScannerIntegration:
     def run_secrets(self, target_repo: str) -> List[Finding]:
         logger.info("Running Secret Detection (Gitleaks/TruffleHog stub)...")
         if target_repo == "training_playground":
-            return [self.TRAINING_EXAMPLE]
+            return [dataclasses.replace(self.TRAINING_EXAMPLE, raw_data=dict(self.TRAINING_EXAMPLE.raw_data))]
         # Real runs: invoke gitleaks/trufflehog CLI and parse output here
         logger.warning(
             "Secret scanner is a stub. Integrate gitleaks or trufflehog CLI for real results."
@@ -306,7 +309,7 @@ class IaCScannerIntegration:
     def run_iac(self, target_repo: str) -> List[Finding]:
         logger.info("Running IaC Misconfiguration Scan (Trivy/Checkov stub)...")
         if target_repo == "training_playground":
-            return [self.TRAINING_EXAMPLE]
+            return [dataclasses.replace(self.TRAINING_EXAMPLE, raw_data=dict(self.TRAINING_EXAMPLE.raw_data))]
         logger.warning(
             "IaC scanner is a stub. Integrate trivy or checkov CLI for real results."
         )
@@ -339,7 +342,7 @@ class AISPMScanner:
     def run_aispm(self, target_repo: str) -> List[Finding]:
         logger.info("Running AI-SPM checks for Jupyter Notebooks (stub)...")
         if target_repo == "training_playground":
-            return [self.TRAINING_EXAMPLE]
+            return [dataclasses.replace(self.TRAINING_EXAMPLE, raw_data=dict(self.TRAINING_EXAMPLE.raw_data))]
         logger.warning(
             "AI-SPM scanner is a stub. Integrate nb-defense CLI for real results."
         )

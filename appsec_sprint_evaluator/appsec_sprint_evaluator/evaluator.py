@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 def run_evaluation(args):
     target_repo = args.target_repo
-    logger.info(f"--- Starting ASPM Evaluation Pipeline for: {target_repo} ---")
+    logger.info(f"--- Starting Security Evaluation Pipeline for: {target_repo} ---")
 
     findings = []
 
@@ -40,7 +40,7 @@ def run_evaluation(args):
     ai_engine = AITriageEngine(use_mock=args.use_mock_ai)
     triaged_findings = ai_engine.triage_findings(findings)
 
-    # 8. Generate Unified ASPM Dashboard & PRs
+    # 8. Generate Unified Security Findings Dashboard & PRs
     reporter = GitHubReporter(
         output_dir=args.output_dir,
         github_repo=args.github_repo
@@ -55,4 +55,4 @@ def run_evaluation(args):
     else:
         logger.info("Skipping GitHub API Integration (no --github-repo provided).")
 
-    logger.info("ASPM Evaluation complete. Please review the output directory.")
+    logger.info("Evaluation complete. Please review the output directory.")

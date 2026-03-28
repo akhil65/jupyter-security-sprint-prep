@@ -51,7 +51,7 @@ class DynamicAnalysisModule:
             res = requests.get(f"{base_url}/api/kernels", timeout=3)
             if res.status_code == 200:
                 self.findings.append(Finding(
-                    tool="zap-dast", category="DAST", repo=self.target_repo, issue_id="ZAP-1",
+                    tool="jupyter-dast-probe", category="DAST", repo=self.target_repo, issue_id="ZAP-1",
                     severity="HIGH", file_path="api/kernels", line_number=0,
                     description="Unauthenticated API access detected on /api/kernels",
                     raw_data={"status_code": res.status_code}
@@ -72,7 +72,7 @@ class DynamicAnalysisModule:
 
             if missing_headers:
                 self.findings.append(Finding(
-                    tool="zap-dast", category="DAST", repo=self.target_repo, issue_id="ZAP-2",
+                    tool="jupyter-dast-probe", category="DAST", repo=self.target_repo, issue_id="ZAP-2",
                     severity="LOW", file_path="/", line_number=0,
                     description=f"Missing security headers: {', '.join(missing_headers)}",
                     raw_data={"headers": dict(res.headers)}

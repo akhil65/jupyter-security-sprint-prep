@@ -2,8 +2,7 @@ import time
 import sys
 import os
 from colorama import init, Fore, Style
-from .static_parser import StaticAnalysisParser, SCAIntegration, SecretScannerIntegration, IaCScannerIntegration, AISPMScanner
-from pathlib import Path
+from .static_parser import StaticAnalysisParser, SCAIntegration, SecretScannerIntegration, IaCScannerIntegration
 from .ai_reviewer import AITriageEngine
 from .github_reporter import GitHubReporter
 
@@ -100,12 +99,12 @@ def run_tutorial():
     # 6. GitHub Integration
     print_slow(Fore.GREEN + "[Step 6] Automated GitHub Contribution (Draft PRs)")
     print_slow("The final step is to orchestrate these fixes back to the maintainers.")
-    print_slow("The tool generates a unified ASPM Dashboard (Markdown/JSON) and opens a Draft PR.")
+    print_slow("The tool generates a unified security findings dashboard (Markdown/JSON) and opens a Draft PR.")
     time.sleep(1)
 
     print(Fore.BLUE + "   -> Generating `output/training_playground_aspm_dashboard.md`...")
     print(Fore.BLUE + "   -> Generating `output/training_playground_aspm_dashboard.json`...")
-    print(Fore.BLUE + "   -> (Simulated) Opened GitHub Draft PR: 'Fix: Address High-Severity ASPM Findings'")
+    print(Fore.BLUE + "   -> (Simulated) Opened GitHub Draft PR: 'Fix: Address High-Severity Security Findings'")
 
     print_slow(Fore.CYAN + Style.BRIGHT + "\n============================================================")
     print_slow(Fore.CYAN + Style.BRIGHT + "   Tutorial Complete! 🎉")

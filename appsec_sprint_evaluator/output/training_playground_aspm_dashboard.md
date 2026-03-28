@@ -14,7 +14,7 @@ This report aggregates findings across SAST, SCA, Secrets, IaC, and AI-SPM for t
 - **SCA:** 1 (pip-audit against requirements.txt)
 - **SECRETS:** 1 (stub demo — gitleaks/trufflehog not integrated)
 - **IAC:** 1 (stub demo — trivy/checkov not integrated)
-- **AI-SPM:** 1 (stub demo — nb-defense not integrated)
+- **AI-SPM:** 1 (stub demo — nb-defense not integrated; example.ipynb provided for demonstration)
 
 ---
 
@@ -73,17 +73,19 @@ aws_secret = os.environ["AWS_SECRET_ACCESS_KEY"]
 ---
 
 ### 5. [HIGH] IAC (trivy): AVD-AWS-0057-demo
-**Location:** `training_playground/main.tf:7`
+**Location:** `training_playground/main.tf:23`
 
-**Description:** [TRAINING DEMO] S3 bucket uses deprecated 'acl = public-read'. In production: run `trivy config` or `checkov -d .` against your Terraform.
+**Description:** [TRAINING DEMO] S3 bucket 'insecure' has no public access block enabled. In production: run `trivy config` or `checkov -d .` against your Terraform.
 
 **AI Suggested Fix:**
 ```hcl
-# Remove acl argument, use aws_s3_bucket_public_access_block instead:
-resource "aws_s3_bucket_public_access_block" "example" {
-  bucket                  = aws_s3_bucket.example.id
+# Add an aws_s3_bucket_public_access_block resource:
+resource "aws_s3_bucket_public_access_block" "secure" {
+  bucket                  = aws_s3_bucket.insecure.id
   block_public_acls       = true
   block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 ```
 

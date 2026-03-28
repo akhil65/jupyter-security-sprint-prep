@@ -1,15 +1,15 @@
 {
   "target": "training_playground",
-  "total_findings": 5,
+  "total_findings": 6,
   "breakdown": {
     "SAST": 2,
     "SCA": 1,
     "SECRETS": 1,
     "IAC": 1,
     "DAST": 0,
-    "AI-SPM": 0
+    "AI-SPM": 1
   },
-  "note": "DAST and AI-SPM are stubs for training_playground — no live server to probe, no notebooks to scan.",
+  "note": "DAST is not applicable for training_playground (no live server to probe). All other categories have demo findings from known-bad training files.",
   "findings": [
     {
       "tool": "bandit",
@@ -64,11 +64,23 @@
       "category": "IAC",
       "severity": "HIGH",
       "file_path": "training_playground/main.tf",
-      "line_number": 7,
-      "description": "[TRAINING DEMO] S3 bucket uses deprecated 'acl = public-read'. In production: run trivy config or checkov -d . against your Terraform.",
+      "line_number": 23,
+      "description": "[TRAINING DEMO] S3 bucket 'insecure' has no public access block enabled. In production: run trivy config or checkov -d . against your Terraform.",
       "ai_triage": {
         "is_false_positive": false,
-        "suggested_fix": "Replace acl argument with aws_s3_bucket_public_access_block resource setting block_public_acls=true."
+        "suggested_fix": "Add an aws_s3_bucket_public_access_block resource with block_public_acls=true, block_public_policy=true, ignore_public_acls=true, restrict_public_buckets=true."
+      }
+    },
+    {
+      "tool": "nb-defense",
+      "category": "AI-SPM",
+      "severity": "MEDIUM",
+      "file_path": "training_playground/notebooks/example.ipynb",
+      "line_number": 3,
+      "description": "[TRAINING DEMO] Unencrypted PII pattern in notebook cell outputs. In production: run nbdefense scan against your notebooks.",
+      "ai_triage": {
+        "is_false_positive": false,
+        "suggested_fix": "Strip outputs before committing: jupyter nbconvert --clear-output --inplace notebook.ipynb"
       }
     }
   ]

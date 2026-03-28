@@ -46,6 +46,7 @@ class GitHubReporter:
                     "category": f.category,
                     "severity": f.severity,
                     "file_path": f.file_path,
+                    "line_number": f.line_number,
                     "description": f.description,
                     "ai_triage": f.raw_data.get("ai_analysis", {})
                 } for f in findings

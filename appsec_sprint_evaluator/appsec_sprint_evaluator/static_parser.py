@@ -287,9 +287,9 @@ class IaCScannerIntegration:
         issue_id="AVD-AWS-0057-demo",
         severity="HIGH",
         file_path="training_playground/main.tf",
-        line_number=7,
+        line_number=23,
         description=(
-            "[TRAINING DEMO] S3 bucket uses deprecated 'acl = public-read'. "
+            "[TRAINING DEMO] S3 bucket 'insecure' has no public access block enabled. "
             "In production: run `trivy config` or `checkov -d .` against your Terraform."
         ),
         raw_data={"demo": True, "framework": "Terraform"},

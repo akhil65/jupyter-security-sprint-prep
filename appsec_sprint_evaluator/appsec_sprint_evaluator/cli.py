@@ -14,7 +14,7 @@ def main():
         "--target-repo",
         type=str,
         default="jupyter_server",
-        help="The target repository to evaluate (e.g. jupyter_server or a local path). Defaults to jupyter_server."
+        help="The target repository key to evaluate (e.g. jupyter_server, jupyterhub, training_playground). Defaults to jupyter_server."
     )
     parser.add_argument(
         "--output-dir",

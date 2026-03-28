@@ -22,6 +22,41 @@ class Finding:
 class StaticAnalysisParser:
     """Parses static analysis JSON outputs into actionable Finding objects."""
 
+    # Pre-canned SAST findings for training_playground. The playground uses
+    # known-bad source files (vulnerable_app.py) that will never have real
+    # bandit/semgrep JSON in scans/. These findings match what bandit actually
+    # reports when you run it against training_playground/vulnerable_app.py.
+    TRAINING_SAST_EXAMPLES = [
+        Finding(
+            tool="bandit",
+            category="SAST",
+            repo="training_playground",
+            issue_id="B602",
+            severity="HIGH",
+            file_path="training_playground/vulnerable_app.py",
+            line_number=16,
+            description=(
+                "[B602] subprocess_popen_with_shell_equals_true: "
+                "subprocess call with shell=True identified, security issue."
+            ),
+            raw_data={"demo": True},
+        ),
+        Finding(
+            tool="bandit",
+            category="SAST",
+            repo="training_playground",
+            issue_id="B301",
+            severity="MEDIUM",
+            file_path="training_playground/vulnerable_app.py",
+            line_number=21,
+            description=(
+                "[B301] pickle: Pickle and modules that wrap it can be unsafe "
+                "when used to deserialize untrusted data, possible security issue."
+            ),
+            raw_data={"demo": True},
+        ),
+    ]
+
     def __init__(self, notes_dir: str = "notes", scans_dir: str = "scans"):
         self.notes_dir = Path(notes_dir)
         self.scans_dir = Path(scans_dir)
@@ -106,6 +141,16 @@ class StaticAnalysisParser:
 
     def collect_findings(self, target_repo: str) -> List[Finding]:
         logger.info(f"Running Static Analysis (SAST - Bandit/Semgrep) for {target_repo}...")
+
+        # training_playground has no real scan JSON (it's a static demo, not a real
+        # project that gets scanned on CI). Return the pre-canned demo findings.
+        if target_repo == "training_playground":
+            logger.info(
+                f"Returning {len(self.TRAINING_SAST_EXAMPLES)} pre-canned SAST demo findings "
+                "for training_playground."
+            )
+            return list(self.TRAINING_SAST_EXAMPLES)
+
         findings = []
         findings.extend(self.parse_bandit_json(target_repo))
         findings.extend(self.parse_semgrep_json(target_repo))

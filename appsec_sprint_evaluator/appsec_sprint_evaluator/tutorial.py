@@ -3,6 +3,7 @@ import sys
 import os
 from colorama import init, Fore, Style
 from .static_parser import StaticAnalysisParser, SCAIntegration, SecretScannerIntegration, IaCScannerIntegration, AISPMScanner
+from pathlib import Path
 from .ai_reviewer import AITriageEngine
 from .github_reporter import GitHubReporter
 
@@ -28,16 +29,19 @@ def run_tutorial():
 
     print_slow("This interactive guide will walk you through evaluating the `training_playground`")
     print_slow("repository. We will simulate running multiple security scanners, aggregating")
-    print_slow("the results into an ASPM matrix, and triaging them with AI.")
+    print_slow("the results into a unified findings dashboard, and triaging them with AI.")
 
     step_prompt()
 
     # 1. SAST
     print_slow(Fore.GREEN + "[Step 1] Static Application Security Testing (SAST)")
-    print_slow("Scanning `training_playground/vulnerable_app.py` using Bandit and Semgrep...")
+    print_slow("Scanning `training_playground/vulnerable_app.py` using Bandit...")
     time.sleep(1)
-    print(Fore.RED + " ✗ Found: Command Injection (subprocess.Popen with shell=True)")
-    print(Fore.RED + " ✗ Found: Insecure Deserialization (pickle.loads)")
+    sast = StaticAnalysisParser()
+    findings_sast = sast.collect_findings("training_playground")
+    for f in findings_sast:
+        print(Fore.RED + f" ✗ Found: [{f.severity}] {f.issue_id} in {f.file_path}:{f.line_number}")
+        print(Fore.WHITE + f"   {f.description}")
 
     step_prompt()
 
@@ -83,7 +87,7 @@ def run_tutorial():
     print_slow("The raw scanners found multiple vulnerabilities. Some might be false positives.")
     print_slow("Sending context to the AI Triage Engine (Mock/Gemini) to evaluate...")
 
-    findings = findings_sca + findings_sec + findings_iac
+    findings = findings_sast + findings_sca + findings_sec + findings_iac
     ai = AITriageEngine(use_mock=True)
 
     time.sleep(2)

@@ -42,8 +42,8 @@ class DynamicAnalysisModule:
         return False
 
     def run_dast_probe(self):
-        """Simulates an OWASP ZAP API scan or basic fuzzer."""
-        logger.info("Running DAST probe (OWASP ZAP AF simulation)...")
+        """Probes the running jupyter server for common misconfigurations."""
+        logger.info("Running DAST probe against local jupyter server...")
         base_url = f"http://127.0.0.1:{self.port}"
 
         # Probe 1: Check for exposed API without token
@@ -91,6 +91,12 @@ class DynamicAnalysisModule:
                 self.process.kill()
 
     def run_probe(self) -> list:
+        # training_playground is a collection of static vulnerable files, not a
+        # runnable server — DAST is not applicable to it.
+        if self.target_repo == "training_playground":
+            logger.info("Skipping DAST probe for training_playground (no live server).")
+            return []
+
         if self.start_target_app():
             try:
                 self.run_dast_probe()

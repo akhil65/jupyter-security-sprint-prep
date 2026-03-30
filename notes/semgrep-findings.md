@@ -14,7 +14,7 @@
 | jupyter_server | 13 | 6 |
 | jupyterhub | 53 | 9 |
 
-All findings are severity WARNING except one ERROR in jupyterhub (Dockerfile missing USER). The errors are semgrep parse failures on non-Python files (ignored safely).
+Most findings are severity WARNING (mapped to MEDIUM) with two exceptions: one ERROR (HIGH) in jupyterhub for the Dockerfile missing a USER directive, and one INFO (LOW) for bind-to-all-interfaces. The "Errors" column in the table above are semgrep parse failures on non-Python files (ignored safely).
 
 ---
 
@@ -44,7 +44,7 @@ This is the root cause of the template XSS risk above — autoescaping is off gl
 
 | Location | Issue |
 |----------|-------|
-| `jupyter_server/auth/__main__.py:41` | Logger call containing the string `"password stored in config dir: %s"` |
+| `jupyter_server/jupyter_server/auth/__main__.py:41` | Logger call containing the string `"password stored in config dir: %s"` |
 
 The password value is being logged. Depending on log level and output destination, this could expose credentials in log files or stdout.
 
@@ -78,7 +78,7 @@ Same root issue as jupyter_server — global autoescape is off.
 
 | Location | Issue |
 |----------|-------|
-| `docs/howto/configuration/config-proxy.md:57,84,103,103,118` | `$http_host` / `$host` used in nginx proxy config examples (line 103 matches twice — two patterns fire on the same line) |
+| `docs/source/howto/configuration/config-proxy.md:57,84,103,103,118` | `$http_host` / `$host` used in nginx proxy config examples (line 103 matches twice — two patterns fire on the same line) |
 
 The documentation nginx examples use `$http_host` which is attacker-controlled (comes from the HTTP Host header). If copied verbatim, this could allow Host header injection attacks. Should use `$host` with explicit `server_name` validation instead.
 

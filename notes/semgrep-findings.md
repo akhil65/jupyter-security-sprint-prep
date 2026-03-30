@@ -52,7 +52,7 @@ The password value is being logged. Depending on log level and output destinatio
 
 ## jupyterhub — 53 Findings
 
-### Template XSS (35 findings)
+### Template XSS (37 findings)
 
 The dominant category — spread across many templates:
 
@@ -114,6 +114,14 @@ The example Dockerfile runs as root. While it's an example, example code gets co
 | `examples/service-whoami-flask/whoami-flask.py:42` | Flask cookie without `secure`, `httponly`, `samesite` flags |
 
 Example Flask service sets a cookie without security flags. Again an example, but worth fixing as a reference.
+
+### Bind to All Interfaces (1 finding)
+
+| Location | Issue |
+|----------|-------|
+| `jupyterhub/jupyterhub/objects.py` | Service bound to `0.0.0.0` — exposes service on all network interfaces |
+
+Binding to all interfaces is expected behavior for a JupyterHub service in many deployments, but should be explicitly documented and restricted by firewall rules in production.
 
 ---
 

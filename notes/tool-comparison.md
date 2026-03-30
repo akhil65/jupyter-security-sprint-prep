@@ -101,7 +101,7 @@ Semgrep is a polyglot static analysis engine that matches code patterns using a 
 
 ### Results on Jupyter repos
 - jupyter_server: 13 findings (11 XSS/template, 1 Jinja2 autoescape, 1 credential leak)
-- jupyterhub: 53 findings (35 template XSS, 5 nginx host header, 3 urllib, 3 exec(), 2 Jinja2 autoescape, others)
+- jupyterhub: 53 findings (37 template XSS, 5 nginx host header, 3 urllib, 3 exec(), 2 Jinja2 autoescape, 1 Dockerfile root, 1 Flask cookie, 1 bind-all-interfaces)
 - Rulesets used: `p/owasp-top-ten`, `p/python`, `p/security-audit`
 
 ### Recommended use

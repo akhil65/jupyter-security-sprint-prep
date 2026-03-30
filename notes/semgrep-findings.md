@@ -78,7 +78,7 @@ Same root issue as jupyter_server — global autoescape is off.
 
 | Location | Issue |
 |----------|-------|
-| `docs/howto/configuration/config-proxy.md:57,84,103,118` | `$http_host` / `$host` used in nginx proxy config examples |
+| `docs/howto/configuration/config-proxy.md:57,84,103,103,118` | `$http_host` / `$host` used in nginx proxy config examples (line 103 matches twice — two patterns fire on the same line) |
 
 The documentation nginx examples use `$http_host` which is attacker-controlled (comes from the HTTP Host header). If copied verbatim, this could allow Host header injection attacks. Should use `$host` with explicit `server_name` validation instead.
 
@@ -119,7 +119,7 @@ Example Flask service sets a cookie without security flags. Again an example, bu
 
 | Location | Issue |
 |----------|-------|
-| `jupyterhub/jupyterhub/objects.py` | Service bound to `0.0.0.0` — exposes service on all network interfaces |
+| `jupyterhub/jupyterhub/utils.py:76` | Service bound to `0.0.0.0` — exposes service on all network interfaces |
 
 Binding to all interfaces is expected behavior for a JupyterHub service in many deployments, but should be explicitly documented and restricted by firewall rules in production.
 

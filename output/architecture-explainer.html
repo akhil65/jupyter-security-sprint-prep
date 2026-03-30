@@ -429,8 +429,8 @@
         <div class="finding-loc">jupyterhub/proxy.py:757</div>
         <div class="finding-desc">Runtime code (not a test or build script) calls Popen with shell=True. If any part of the command is user-influenced, this is command injection.</div>
       </div>
-      <div class="finding-card high">
-        <div class="finding-sev">HIGH · SEMGREP</div>
+      <div class="finding-card medium">
+        <div class="finding-sev">MEDIUM · SEMGREP</div>
         <div class="finding-title">Template vars in &lt;script&gt; tags (admin.html)</div>
         <div class="finding-loc">share/jupyterhub/templates/admin.html:5,6,8</div>
         <div class="finding-desc">Variables injected directly into JavaScript blocks using | safe. If any variable is user-controlled, this is stored XSS in the admin panel.</div>
@@ -459,8 +459,8 @@
         <div class="finding-loc">docs/howto/configuration/config-proxy.md</div>
         <div class="finding-desc">Documentation nginx examples use $http_host (attacker-controlled Host header). Operators copying these examples are vulnerable to Host header injection.</div>
       </div>
-      <div class="finding-card low">
-        <div class="finding-sev">LOW · SEMGREP</div>
+      <div class="finding-card high">
+        <div class="finding-sev">HIGH · SEMGREP</div>
         <div class="finding-title">Dockerfile runs as root</div>
         <div class="finding-loc">examples/service-fastapi/Dockerfile:13</div>
         <div class="finding-desc">No USER directive in example Dockerfile. Container runs as root. Example code gets copied into production deployments.</div>

@@ -81,3 +81,37 @@ jupyter server
 ### Next Steps / Future Enhancements
 * **Policy Engine:** Move `RESTRICTED_MODULES` and builtins to a configurable JSON policy file so administrators can tailor the ruleset per deployment.
 * **eBPF Integration (The "Next-Next" Level):** Integrate this extension with eBPF tools like Tetragon. If an obfuscated payload bypasses the AST parser and spawns an unexpected process, eBPF kills it at the Linux kernel level and reports the incident back to the Jupyter UI.
+
+---
+
+## The Sprint Tool: AppSec Pipeline Evaluator (`appsec_sprint_evaluator`)
+
+`appsec_sprint_evaluator` is a CLI tool that orchestrates a full 7-stage Application Security pipeline — SAST (bandit/semgrep), SCA (pip-audit), secrets detection, IaC scanning, AI-SPM, DAST, and AI-assisted triage — then consolidates findings into a unified Markdown/JSON dashboard and optionally opens draft GitHub PRs with AI-suggested fixes.
+
+### Quick Start
+
+```bash
+# Install (from the project root)
+pip install -e appsec_sprint_evaluator/
+
+# Run the interactive tutorial against the training_playground demo files
+# IMPORTANT: always run from the project root — the tool resolves scans/, notes/,
+# and output/ as relative paths from your working directory.
+appsec-tutorial
+
+# Run the full pipeline against a real repo (after running scan scripts in scans/)
+appsec-eval --target-repo jupyter_server
+appsec-eval --target-repo jupyterhub
+```
+
+See [`appsec_sprint_evaluator/training_playground/README.md`](appsec_sprint_evaluator/training_playground/README.md) for the full walkthrough, and [`notes/`](notes/) for scan findings and tool comparison notes.
+
+### Re-running Scans
+
+Each scan directory has a run script:
+
+```bash
+bash scans/bandit/run-bandit.sh       # SAST — bandit
+bash scans/semgrep/run-semgrep.sh     # SAST — semgrep (requires network)
+bash scans/pip-audit/run-pip-audit.sh # SCA  — pip-audit (requires network)
+```

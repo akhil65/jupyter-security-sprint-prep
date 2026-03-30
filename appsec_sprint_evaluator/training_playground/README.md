@@ -8,7 +8,7 @@ This directory contains intentionally vulnerable files used to verify that the `
 
 **`requirements.txt`** — Pins `requests==2.28.1` and `urllib3<1.26.17`, both below the versions that fix known CVEs (CVE-2023-32681, CVE-2023-43804). pip-audit should flag these.
 
-**`main.tf`** — Terraform config declaring a publicly readable S3 bucket using the deprecated `acl = "public-read"` argument. The IaC scanner stub demonstrates what Trivy or Checkov would flag here.
+**`main.tf`** — Terraform config declaring an S3 bucket without an `aws_s3_bucket_public_access_block` resource, leaving the bucket publicly accessible. This is what Trivy/Checkov flag as AVD-AWS-0057 ("Bucket does not have public access block enabled"). The file also includes a commented-out legacy example using the deprecated `acl = "public-read"` argument (removed in AWS provider v5) for reference.
 
 ## What's Actually Integrated vs Stubbed
 
@@ -24,9 +24,20 @@ The evaluator has two modes:
 | DAST | jupyter server probe | ⏭ Skipped — no live server to probe | ✅ Spins up local Jupyter Server, checks `/api/kernels` auth and security headers |
 | AI Triage | Gemini / mock | ✅ Mock mode always available | ✅ Mock always available, Gemini requires `GEMINI_API_KEY` |
 
-## Running the Tutorial
+## Installation
+
+Install the evaluator from the `appsec_sprint_evaluator/` directory (or the project root):
 
 ```bash
+pip install -e appsec_sprint_evaluator/
+```
+
+## Running the Tutorial
+
+> **Important:** Run all commands from the **project root** (`jupyter-security-sprint-prep/`). The evaluator resolves `scans/`, `notes/`, and `output/` as relative paths from your working directory — running from a subdirectory will cause silent scan misses.
+
+```bash
+# From the project root:
 appsec-tutorial
 ```
 
@@ -35,10 +46,11 @@ This walks through each pipeline stage against the training playground files, sh
 ## Running the Evaluator Directly
 
 ```bash
+# From the project root:
 appsec-eval --target-repo training_playground
 ```
 
-To run against real Jupyter repos (after running the scan scripts):
+To run against real Jupyter repos (after running the scan scripts in `scans/`):
 
 ```bash
 appsec-eval --target-repo jupyter_server

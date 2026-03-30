@@ -51,6 +51,17 @@ jupyter server
 # jupyter lab
 ```
 
+### 4. Run the Automated Integration Test
+`test_ws.py` exercises the firewall over a real WebSocket connection. Start the server with a known token first, then run the test:
+
+```bash
+jupyter server --IdentityProvider.token=testtoken --port=8888 &
+sleep 3  # wait for server to start
+python test_ws.py
+```
+
+This runs 6 tests: safe code passes, `import os` is blocked, `open()` is allowed, `eval()` is blocked, `!echo` shell escape is blocked, and `%matplotlib inline` line magic passes through.
+
 1. Open a new Python notebook.
 2. **Run Safe Code:** Try executing basic Python code.
    ```python

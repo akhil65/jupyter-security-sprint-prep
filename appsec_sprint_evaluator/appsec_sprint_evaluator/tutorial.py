@@ -3,6 +3,7 @@ import sys
 import os
 from colorama import init, Fore, Style
 from .static_parser import StaticAnalysisParser, SCAIntegration, SecretScannerIntegration, IaCScannerIntegration, AISPMScanner
+from .dast_probe import DynamicAnalysisModule
 from .ai_reviewer import AITriageEngine
 from .github_reporter import GitHubReporter
 
@@ -94,12 +95,25 @@ def run_tutorial():
 
     step_prompt()
 
-    # 6. AI Triage
-    print_slow(Fore.MAGENTA + Style.BRIGHT + "[Step 6] AI-Assisted Triage and Remediation")
+    # 6. DAST
+    print_slow(Fore.GREEN + "[Step 6] Dynamic Application Security Testing (DAST)")
+    print_slow("DAST spins up a live Jupyter Server and probes it for misconfigs:")
+    print_slow("  - Unauthenticated /api/kernels access")
+    print_slow("  - Missing security headers (CSP, X-Content-Type-Options, X-Frame-Options)")
+    print_slow("Skipping for training_playground — no runnable server to probe.")
+    print_slow("Run `appsec-eval --target-repo jupyter_server` to see a live DAST probe.")
+    time.sleep(1)
+    dast = DynamicAnalysisModule(target_repo="training_playground", port=8888)
+    findings_dast = dast.run_probe()  # returns [] for training_playground — no server to probe
+
+    step_prompt()
+
+    # 7. AI Triage
+    print_slow(Fore.MAGENTA + Style.BRIGHT + "[Step 7] AI-Assisted Triage and Remediation")
     print_slow("The raw scanners found multiple vulnerabilities. Some might be false positives.")
     print_slow("Sending context to the AI Triage Engine (Mock/Gemini) to evaluate...")
 
-    findings = findings_sast + findings_sca + findings_sec + findings_iac + findings_aispm
+    findings = findings_sast + findings_sca + findings_sec + findings_iac + findings_aispm + findings_dast
     ai = AITriageEngine(use_mock=True)
 
     time.sleep(2)
@@ -109,8 +123,8 @@ def run_tutorial():
 
     step_prompt()
 
-    # 7. GitHub Integration
-    print_slow(Fore.GREEN + "[Step 7] Automated GitHub Contribution (Draft PRs)")
+    # Final step: Dashboard + GitHub
+    print_slow(Fore.GREEN + "[Final Step] Dashboard Generation & GitHub Contribution")
     print_slow("The final step is to orchestrate these fixes back to the maintainers.")
     print_slow("The tool generates a unified security findings dashboard (Markdown/JSON) and opens a Draft PR.")
     time.sleep(1)

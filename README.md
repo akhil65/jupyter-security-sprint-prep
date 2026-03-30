@@ -51,18 +51,10 @@ jupyter server
 # jupyter lab
 ```
 
-### 4. Run the Automated Integration Test
-`test_ws.py` exercises the firewall over a real WebSocket connection. Start the server with a known token first, then run the test:
+Then open a browser, navigate to the URL printed by the server, and try these exercises in a new Python notebook:
 
-```bash
-jupyter server --IdentityProvider.token=testtoken --port=8888 &
-sleep 3  # wait for server to start
-python test_ws.py
-```
+1. **Open a new Python notebook.**
 
-This runs 6 tests: safe code passes, `import os` is blocked, `open()` is allowed, `eval()` is blocked, `!echo` shell escape is blocked, and `%matplotlib inline` line magic passes through.
-
-1. Open a new Python notebook.
 2. **Run Safe Code:** Try executing basic Python code.
    ```python
    print("Hello, secure world!")
@@ -88,6 +80,17 @@ This runs 6 tests: safe code passes, `import os` is blocked, `open()` is allowed
    ().__class__.__bases__[0].__subclasses__()
    ```
    *Expected Outcome:* The AST analyzer flags the access to `__class__` and `__bases__`, blocking the execution.
+
+### 4. Run the Automated Integration Test
+`test_ws.py` exercises the firewall over a real WebSocket connection. Start the server with a known token first, then run the test:
+
+```bash
+jupyter server --IdentityProvider.token=testtoken --port=8888 &
+sleep 3  # wait for server to start
+python test_ws.py
+```
+
+This runs 6 tests: safe code passes, `import os` is blocked, `open()` is allowed, `eval()` is blocked, `!echo` shell escape is blocked, and `%matplotlib inline` line magic passes through.
 
 ### Next Steps / Future Enhancements
 * **Policy Engine:** Move `RESTRICTED_MODULES` and builtins to a configurable JSON policy file so administrators can tailor the ruleset per deployment.

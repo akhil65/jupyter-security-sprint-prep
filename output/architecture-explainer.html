@@ -168,10 +168,10 @@
 
 <!-- TABS -->
 <div class="tabs">
-  <div class="tab active" onclick="showTab('firewall')">Firewall — How It Works</div>
-  <div class="tab" onclick="showTab('evaluator')">Evaluator Pipeline</div>
-  <div class="tab" onclick="showTab('findings')">Real Scan Results</div>
-  <div class="tab" onclick="showTab('tools')">Tool Comparison</div>
+  <div class="tab active" onclick="showTab('firewall', event)">Firewall — How It Works</div>
+  <div class="tab" onclick="showTab('evaluator', event)">Evaluator Pipeline</div>
+  <div class="tab" onclick="showTab('findings', event)">Real Scan Results</div>
+  <div class="tab" onclick="showTab('tools', event)">Tool Comparison</div>
 </div>
 
 <!-- TAB: FIREWALL -->
@@ -536,11 +536,11 @@
 </div>
 
 <script>
-function showTab(name) {
+function showTab(name, evt) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  event.target.classList.add('active');
+  evt.target.classList.add('active');
 }
 </script>
 </body>

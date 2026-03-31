@@ -9,14 +9,13 @@
 # Install: curl -s https://raw.githubusercontent.com/kubescape/kubescape/master/install.sh | /bin/bash
 # Docs:    https://kubescape.io/
 #
-# Run from the repo root:
-#   bash container-k8s-security/scans/kubescape/run-kubescape.sh
-#   bash container-k8s-security/scans/kubescape/run-kubescape.sh --live-cluster
+# Usage:
+#   bash run-kubescape.sh                 # static scan of z2jh Helm chart
+#   bash run-kubescape.sh --live-cluster  # scan running cluster via kubeconfig
 # ============================================================
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MANIFESTS="$SCRIPT_DIR/../../k8s-manifests"
 OUT_DIR="$SCRIPT_DIR"
 LIVE_CLUSTER=false
 
@@ -31,97 +30,87 @@ command -v kubescape >/dev/null 2>&1 || {
 }
 
 echo "═══════════════════════════════════════════════════════════"
-echo "  Kubescape K8s Security Scan — Jupyter Security Sprint"
+echo "  Kubescape K8s Security Scan — Jupyter K8s Security"
 echo "═══════════════════════════════════════════════════════════"
 
-# ── 1. Static scan — NSA hardening framework ────────────────
+# ── Resolve scan target ──────────────────────────────────────
+# Primary target: rendered z2jh Helm chart (official JupyterHub K8s deployment)
+# Fallback: demo manifests in k8s-manifests/
+Z2JH_YAML="/tmp/z2jh-rendered.yaml"
+
+if [ -f "$Z2JH_YAML" ]; then
+  SCAN_TARGET="$Z2JH_YAML"
+  echo "  Target: z2jh rendered Helm chart ($Z2JH_YAML)"
+  echo "  (Run run-checkov.sh first to generate this file, or:"
+  echo "   helm template jupyterhub jupyterhub/jupyterhub --namespace jupyter > $Z2JH_YAML)"
+else
+  SCAN_TARGET="$SCRIPT_DIR/../../k8s-manifests"
+  echo "  Target: demo k8s-manifests/ (z2jh YAML not found at $Z2JH_YAML)"
+  echo "  To scan the real z2jh chart:"
+  echo "    helm repo add jupyterhub https://hub.jupyter.org/helm-chart/"
+  echo "    helm template jupyterhub jupyterhub/jupyterhub --namespace jupyter > $Z2JH_YAML"
+  echo "    then re-run this script"
+fi
 echo ""
-echo "[1/4] NSA Kubernetes Hardening Framework (static manifests)..."
-kubescape scan framework nsa \
-  "$MANIFESTS" \
-  --format json \
-  --output "$OUT_DIR/nsa_results.json" \
-  --verbose 2>/dev/null || true
 
+# ── 1. NSA Kubernetes Hardening Framework ───────────────────
+echo "[1/3] NSA Kubernetes Hardening Framework..."
 kubescape scan framework nsa \
-  "$MANIFESTS" \
+  "$SCAN_TARGET" \
   --format pretty-printer \
-  --output "$OUT_DIR/nsa_results.txt" 2>/dev/null || true
+  2>/dev/null > "$OUT_DIR/nsa_results.txt" || true
 
-echo "  -> $OUT_DIR/nsa_results.json"
+kubescape scan framework nsa \
+  "$SCAN_TARGET" \
+  --format json \
+  2>/dev/null > "$OUT_DIR/nsa_results.json" || true
+
 echo "  -> $OUT_DIR/nsa_results.txt"
 
-# ── 2. Static scan — MITRE ATT&CK framework ─────────────────
+# ── 2. MITRE ATT&CK for Containers ──────────────────────────
 echo ""
-echo "[2/4] MITRE ATT&CK for Containers (static manifests)..."
+echo "[2/3] MITRE ATT&CK for Containers..."
 kubescape scan framework mitre \
-  "$MANIFESTS" \
-  --format json \
-  --output "$OUT_DIR/mitre_results.json" \
-  --verbose 2>/dev/null || true
-
-kubescape scan framework mitre \
-  "$MANIFESTS" \
+  "$SCAN_TARGET" \
   --format pretty-printer \
-  --output "$OUT_DIR/mitre_results.txt" 2>/dev/null || true
+  2>/dev/null > "$OUT_DIR/mitre_results.txt" || true
 
-echo "  -> $OUT_DIR/mitre_results.json"
+kubescape scan framework mitre \
+  "$SCAN_TARGET" \
+  --format json \
+  2>/dev/null > "$OUT_DIR/mitre_results.json" || true
 
-# ── 3. Specific high-value controls ─────────────────────────
-echo ""
-echo "[3/4] Targeted control scans (privilege escalation + secrets)..."
+echo "  -> $OUT_DIR/mitre_results.txt"
 
-# C-0016: Allow privilege escalation
-kubescape scan control C-0016 "$MANIFESTS" \
-  --format json --output "$OUT_DIR/ctrl_C-0016_privilege_escalation.json" 2>/dev/null || true
-
-# C-0012: Applications credentials in configuration files
-kubescape scan control C-0012 "$MANIFESTS" \
-  --format json --output "$OUT_DIR/ctrl_C-0012_credentials.json" 2>/dev/null || true
-
-# C-0004: Resources
-kubescape scan control C-0004 "$MANIFESTS" \
-  --format json --output "$OUT_DIR/ctrl_C-0004_resources.json" 2>/dev/null || true
-
-# C-0046: Insecure capabilities
-kubescape scan control C-0046 "$MANIFESTS" \
-  --format json --output "$OUT_DIR/ctrl_C-0046_capabilities.json" 2>/dev/null || true
-
-echo "  -> $OUT_DIR/ctrl_*.json"
-
-# ── 4. Live cluster scan (optional) ─────────────────────────
+# ── 3. Live cluster scan (optional) ─────────────────────────
 if $LIVE_CLUSTER; then
   echo ""
-  echo "[4/4] Live cluster scan — scanning all namespaces..."
-  command -v kubectl >/dev/null 2>&1 || { echo "kubectl not found — can't do live cluster scan"; exit 1; }
+  echo "[3/3] Live cluster scan via kubeconfig..."
+  command -v kubectl >/dev/null 2>&1 || { echo "kubectl not found"; exit 1; }
 
-  # Full posture scan against live cluster
-  kubescape scan \
-    --format json \
-    --output "$OUT_DIR/live_cluster_full.json" \
-    --verbose 2>/dev/null || true
+  # Scan the jupyter namespace specifically
+  kubescape scan framework nsa \
+    --namespace jupyter \
+    --format pretty-printer \
+    2>/dev/null | tee "$OUT_DIR/live_nsa_jupyter_ns.txt" || true
 
-  # Summary for the jupyter namespace specifically
-  kubescape scan namespace jupyter \
-    --format json \
-    --output "$OUT_DIR/live_cluster_jupyter_ns.json" 2>/dev/null || true
+  kubescape scan framework mitre \
+    --namespace jupyter \
+    --format pretty-printer \
+    2>/dev/null > "$OUT_DIR/live_mitre_jupyter_ns.txt" || true
 
-  echo "  -> $OUT_DIR/live_cluster_full.json"
-  echo "  -> $OUT_DIR/live_cluster_jupyter_ns.json"
-  echo ""
-  echo "  Risk score:"
-  kubescape scan namespace jupyter --format pretty-printer 2>/dev/null | grep -E "RISK|Score|Failed|Passed" | head -10 || true
+  echo "  -> $OUT_DIR/live_nsa_jupyter_ns.txt"
+  echo "  -> $OUT_DIR/live_mitre_jupyter_ns.txt"
 else
   echo ""
-  echo "[4/4] Live cluster scan skipped. Re-run with --live-cluster after setup-sandbox.sh."
+  echo "[3/3] Live cluster scan skipped."
+  echo "      To scan a running cluster: re-run with --live-cluster"
+  echo "      (requires kubectl configured with a cluster — kind or real)"
 fi
 
 echo ""
 echo "═══════════════════════════════════════════════════════════"
-echo "  Done. Key files:"
-echo "    NSA results:   $OUT_DIR/nsa_results.txt"
+echo "  Done."
+echo "    NSA results  : $OUT_DIR/nsa_results.txt"
 echo "    MITRE results: $OUT_DIR/mitre_results.txt"
 echo "═══════════════════════════════════════════════════════════"
-echo ""
-echo "  To view risk score summary:"
-echo "    kubescape scan framework nsa $MANIFESTS"

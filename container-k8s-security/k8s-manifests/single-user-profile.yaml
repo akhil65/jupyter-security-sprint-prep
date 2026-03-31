@@ -1,0 +1,128 @@
+# ============================================================
+# Single-User Notebook Server — Kubernetes Profile
+# ============================================================
+# JupyterHub spawns one Pod per user. This is a reference
+# profile showing both the vulnerable default and the hardened
+# configuration. In the real Helm chart this is defined in
+# values.yaml under singleuser.extraContainers / profileList.
+# ============================================================
+
+---
+# VULNERABLE single-user pod (what KubeSpawner produces by default
+# if no profileList / podSpec security settings are configured):
+apiVersion: v1
+kind: Pod
+metadata:
+  name: jupyter-vulnerable-example
+  namespace: jupyter
+  labels:
+    app: jupyterhub
+    component: singleuser-server
+    hub.jupyter.org/username: demo-user
+spec:
+  # VULN: No securityContext at pod level (CKV_K8S_30)
+  # VULN: automountServiceAccountToken defaults to true (CKV_K8S_41)
+  automountServiceAccountToken: true
+
+  containers:
+    - name: notebook
+      # VULN: Unpinned image (CKV_K8S_14)
+      image: quay.io/jupyter/scipy-notebook:latest
+      ports:
+        - containerPort: 8888
+
+      # VULN: No container securityContext at all (CKV_K8S_6, CKV_K8S_20, CKV_K8S_22)
+      # Container runs as jovyan (uid 1000) by default in official images,
+      # but without enforcement it can be overridden by a malicious notebook.
+
+      # VULN: No resource limits — user can exhaust node memory (CKV_K8S_10-13)
+
+      # VULN: No liveness / readiness probes (CKV_K8S_8, CKV_K8S_9)
+
+      env:
+        - name: JUPYTERHUB_API_TOKEN
+          # VULN: Token in plain env var (acceptable here — but should use secretRef)
+          value: "plaintext-token-example"
+
+---
+# HARDENED single-user pod:
+apiVersion: v1
+kind: Pod
+metadata:
+  name: jupyter-hardened-example
+  namespace: jupyter
+  labels:
+    app: jupyterhub
+    component: singleuser-server
+    hub.jupyter.org/username: demo-user
+spec:
+  automountServiceAccountToken: false  # FIX: no K8s API access needed
+
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000      # jovyan
+    runAsGroup: 100      # users
+    fsGroup: 100
+    seccompProfile:
+      type: RuntimeDefault
+
+  containers:
+    - name: notebook
+      # FIX: Pinned to a specific release tag
+      image: quay.io/jupyter/scipy-notebook:2024-10-07
+      ports:
+        - containerPort: 8888
+
+      securityContext:
+        runAsNonRoot: true
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: false  # notebooks need write access to /home/jovyan
+        capabilities:
+          drop:
+            - ALL
+
+      env:
+        - name: JUPYTERHUB_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: jupyter-demo-user-token
+              key: token
+
+      resources:
+        requests:
+          cpu: "500m"
+          memory: "512Mi"
+        limits:
+          cpu: "2"
+          memory: "4Gi"  # cap per-user memory
+
+      livenessProbe:
+        httpGet:
+          path: /api
+          port: 8888
+          httpHeaders:
+            - name: Authorization
+              value: "token $(JUPYTERHUB_API_TOKEN)"
+        initialDelaySeconds: 60
+        periodSeconds: 30
+        failureThreshold: 3
+
+      readinessProbe:
+        httpGet:
+          path: /api
+          port: 8888
+        initialDelaySeconds: 15
+        periodSeconds: 10
+
+      volumeMounts:
+        - name: home
+          mountPath: /home/jovyan
+        - name: tmp
+          mountPath: /tmp
+
+  volumes:
+    - name: home
+      persistentVolumeClaim:
+        claimName: jupyter-demo-user-pvc
+    - name: tmp
+      emptyDir: {}

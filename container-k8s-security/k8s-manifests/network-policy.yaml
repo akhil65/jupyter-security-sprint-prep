@@ -1,0 +1,167 @@
+# ============================================================
+# Network Policies for JupyterHub on Kubernetes
+# ============================================================
+# Without NetworkPolicy, all pods can talk to all other pods
+# in the cluster — a compromised notebook server could reach
+# the hub API, other users' servers, or cluster metadata.
+#
+# This file shows BOTH the vulnerable (missing policy) note
+# and the correct restrictive policies.
+# ============================================================
+
+# ─── WHAT IS MISSING BY DEFAULT (no NetworkPolicy) ──────────
+#
+# In a fresh JupyterHub deployment with no NetworkPolicy:
+#   - Single-user servers can reach the hub API directly (bypass auth)
+#   - Single-user servers can reach each other (lateral movement)
+#   - Single-user servers can reach the K8s API server (privilege escalation)
+#   - Single-user servers can reach cloud metadata endpoints
+#     (e.g. http://169.254.169.254 on AWS/GCP/Azure — credential theft)
+#   - The proxy is reachable from every other pod
+#
+# Kubescape flags this as C-0260 (ensure network policies exist)
+# Checkov flags this as CKV_K8S_7 (no NetworkPolicy covering pod)
+# ─────────────────────────────────────────────────────────────
+
+---
+# Policy 1: Hub — only accepts traffic from proxy and single-user servers
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hub-network-policy
+  namespace: jupyter
+spec:
+  podSelector:
+    matchLabels:
+      component: hub
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Accept from proxy (for hub UI requests routed through proxy)
+    - from:
+        - podSelector:
+            matchLabels:
+              component: proxy
+      ports:
+        - port: 8000
+    # Accept hub API calls from single-user servers (for activity/auth)
+    - from:
+        - podSelector:
+            matchLabels:
+              component: singleuser-server
+      ports:
+        - port: 8081
+  egress:
+    # Hub needs to call K8s API to spawn/delete pods
+    - ports:
+        - port: 443
+        - port: 6443
+    # Hub needs DNS
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Hub talks to its database (PostgreSQL in same namespace)
+    - to:
+        - podSelector:
+            matchLabels:
+              component: db
+      ports:
+        - port: 5432
+
+---
+# Policy 2: Proxy — internet-facing, talks to hub and single-user servers
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: proxy-network-policy
+  namespace: jupyter
+spec:
+  podSelector:
+    matchLabels:
+      component: proxy
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Accept from anywhere (public-facing)
+    - ports:
+        - port: 8000
+  egress:
+    # Forward to hub
+    - to:
+        - podSelector:
+            matchLabels:
+              component: hub
+      ports:
+        - port: 8000
+        - port: 8081
+    # Forward to single-user servers
+    - to:
+        - podSelector:
+            matchLabels:
+              component: singleuser-server
+      ports:
+        - port: 8888
+    # DNS
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+
+---
+# Policy 3: Single-user servers — the most critical policy
+# Each user's notebook server is isolated. It should ONLY be able to:
+#   - Receive traffic from the proxy
+#   - Talk to the hub API (for activity reporting)
+#   - Reach the internet for pip installs (optional — comment out to block)
+# It should NOT be able to:
+#   - Reach other users' servers (lateral movement)
+#   - Reach the K8s API (privilege escalation)
+#   - Reach cloud metadata endpoints (credential theft)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: singleuser-network-policy
+  namespace: jupyter
+spec:
+  podSelector:
+    matchLabels:
+      component: singleuser-server
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Only the proxy can reach single-user servers
+    - from:
+        - podSelector:
+            matchLabels:
+              component: proxy
+      ports:
+        - port: 8888
+  egress:
+    # Hub API (activity reporting, token validation)
+    - to:
+        - podSelector:
+            matchLabels:
+              component: hub
+      ports:
+        - port: 8081
+    # DNS
+    - ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # OPTIONAL: allow pip installs / external data access
+    # Comment this out to fully isolate user servers from the internet.
+    - ports:
+        - port: 443
+        - port: 80
+    # BLOCK: K8s API server (6443) — intentionally NOT listed in egress
+    # BLOCK: Cloud metadata (169.254.169.254) — intentionally NOT listed
+    # Note: To explicitly block metadata endpoint, add a deny rule in your
+    # CNI (Calico/Cilium) or use a separate egress deny policy.

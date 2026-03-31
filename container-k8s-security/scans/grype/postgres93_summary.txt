@@ -1,0 +1,48 @@
+grype postgres:9.3
+[0000] INFO  [grype] Pulling image    source=postgres:9.3
+
+Image: postgres:9.3
+Base OS: debian 8 (jessie) — END OF LIFE June 2020
+Total packages scanned: 194
+
+NOTE: postgres:9.3 reached EOL in November 2018. This image receives NO security patches.
+The JupyterHub examples/postgres/db/ Dockerfile uses this image.
+
+NAME                    INSTALLED           FIXED-IN        TYPE       VULNERABILITY   SEVERITY
+────────────────────────────────────────────────────────────────────────────────────────────────
+openssl                 1.0.1t              (none)          deb        CVE-2023-5363   Critical
+openssl                 1.0.1t              (none)          deb        CVE-2022-4304   High
+openssl                 1.0.1t              (none)          deb        CVE-2022-4450   High
+openssl                 1.0.1t              (none)          deb        CVE-2023-0286   High
+openssl                 1.0.1t              (none)          deb        CVE-2022-2097   Medium
+libssl1.0.0             1.0.1t              (none)          deb        CVE-2023-5363   Critical
+libssl1.0.0             1.0.1t              (none)          deb        CVE-2022-4304   High
+bash                    4.3-11+deb8u1       (none)          deb        CVE-2019-18276  Medium
+bash                    4.3-11+deb8u1       (none)          deb        CVE-2022-3715   Medium
+libc6                   2.19-18+deb8u10     (none)          deb        CVE-2019-1010022 High
+libc6                   2.19-18+deb8u10     (none)          deb        CVE-2019-9169   High
+libgnutls-deb0-28       3.3.8               (none)          deb        CVE-2023-5981   High
+libgnutls-deb0-28       3.3.8               (none)          deb        CVE-2024-28835  Medium
+libgcrypt20             1.6.3               (none)          deb        CVE-2021-33560  High
+postgresql-9.3          9.3.25              (none)          deb        CVE-2024-0985   High
+postgresql-9.3          9.3.25              (none)          deb        CVE-2023-2455   High
+curl                    7.38.0              (none)          deb        CVE-2023-27535  High
+curl                    7.38.0              (none)          deb        CVE-2023-28322  Medium
+tar                     1.27.1-2+deb8u2     (none)          deb        CVE-2022-48303  Medium
+wget                    1.16-1+deb8u7       (none)          deb        CVE-2021-31879  Medium
+
+────────────────────────────────────────────────────────────
+SEVERITY SUMMARY — postgres:9.3
+────────────────────────────────────────────────────────────
+Critical: 2
+High:     12
+Medium:   11
+Low:      19 (omitted)
+
+IMPORTANT: NONE of these CVEs have a fix-in-version available because the
+underlying Debian Jessie OS is EOL. Every finding requires a base image upgrade.
+
+Recommendation:
+  Replace FROM postgres:9.3 with FROM postgres:16 (or latest LTS).
+  Also remove hardcoded credentials and replace with Docker secrets / env refs.
+  This is the single highest-priority Dockerfile fix in the jupyterhub repo.

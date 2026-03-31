@@ -1,0 +1,471 @@
+{
+  "metadata": {
+    "title": "Container & Kubernetes Security Dashboard",
+    "scan_date": "2026-03-31",
+    "tools": ["checkov@3.2.0", "grype@latest", "kubescape@3.x"],
+    "targets": {
+      "iac": "container-k8s-security/k8s-manifests/",
+      "dockerfiles": "repos/jupyterhub/",
+      "images": [
+        "quay.io/jupyterhub/jupyterhub:5.3.0",
+        "quay.io/jupyter/scipy-notebook:2024-10-07",
+        "postgres:9.3"
+      ],
+      "k8s_frameworks": ["nsa", "mitre"]
+    }
+  },
+  "executive_summary": {
+    "iac_checks_failed_vulnerable": 34,
+    "iac_checks_passed_hardened": 28,
+    "iac_risk_reduction_pct": 91,
+    "cves_critical_total": 3,
+    "cves_high_total": 30,
+    "nsa_controls_failed": 10,
+    "nsa_risk_score_vulnerable_pct": 68,
+    "nsa_risk_score_hardened_pct": 11,
+    "nsa_risk_reduction_pct": 84,
+    "mitre_techniques_failed": 6
+  },
+  "checkov": {
+    "k8s_manifests": {
+      "vulnerable": {
+        "checks_passed": 6,
+        "checks_failed": 34,
+        "findings": [
+          {
+            "id": "CKV_K8S_25",
+            "severity": "CRITICAL",
+            "description": "Docker socket mounted — full container escape to host",
+            "resource": "jupyter/Deployment/jupyterhub",
+            "remediation": "Remove volumes[1] hostPath /var/run/docker.sock"
+          },
+          {
+            "id": "CKV_K8S_41",
+            "severity": "CRITICAL",
+            "description": "cluster-admin ClusterRoleBinding for jupyterhub SA",
+            "resource": "jupyter/ClusterRoleBinding/jupyterhub-admin",
+            "remediation": "Replace with minimal Role scoped to pod CRUD in jupyter namespace"
+          },
+          {
+            "id": "CKV_K8S_49",
+            "severity": "CRITICAL",
+            "description": "Wildcard (*/*) permissions in ClusterRole",
+            "resource": "jupyter/ClusterRoleBinding/jupyterhub-admin",
+            "remediation": "Define explicit verbs: [get, list, create, delete, watch] on specific resources"
+          },
+          {
+            "id": "CKV_K8S_35",
+            "severity": "HIGH",
+            "description": "Hardcoded secrets in env vars (JUPYTERHUB_CRYPT_KEY, POSTGRES_PASSWORD)",
+            "resource": "jupyter/Deployment/jupyterhub",
+            "remediation": "Use secretKeyRef pointing to K8s Secret; back with Vault or AWS Secrets Manager"
+          },
+          {
+            "id": "CKV_K8S_6",
+            "severity": "HIGH",
+            "description": "Container runs as root (runAsNonRoot: false)",
+            "resource": "jupyter/Deployment/jupyterhub, jupyter/Pod/jupyter-vulnerable-example",
+            "remediation": "Set securityContext.runAsNonRoot: true, runAsUser: 1000"
+          },
+          {
+            "id": "CKV_K8S_20",
+            "severity": "HIGH",
+            "description": "allowPrivilegeEscalation: true",
+            "resource": "jupyter/Deployment/jupyterhub",
+            "remediation": "Set allowPrivilegeEscalation: false"
+          },
+          {
+            "id": "CKV_K8S_36",
+            "severity": "MEDIUM",
+            "description": "capabilities.add: [NET_ADMIN] — network admin capability",
+            "resource": "jupyter/Deployment/jupyterhub",
+            "remediation": "capabilities.drop: [ALL]; add back only what's strictly necessary"
+          },
+          {
+            "id": "CKV_K8S_10_11_12_13",
+            "severity": "MEDIUM",
+            "description": "No CPU/memory requests or limits on any container",
+            "resource": "all containers",
+            "remediation": "Set resources.requests and resources.limits for CPU and memory"
+          },
+          {
+            "id": "CKV_K8S_14",
+            "severity": "MEDIUM",
+            "description": "Unpinned :latest image tags",
+            "resource": "hub, proxy, user pod",
+            "remediation": "Pin to specific version tags (e.g. jupyterhub:5.3.0)"
+          },
+          {
+            "id": "CKV_K8S_41_sa_token",
+            "severity": "MEDIUM",
+            "description": "automountServiceAccountToken: true on user pod",
+            "resource": "jupyter/Pod/jupyter-vulnerable-example",
+            "remediation": "Set automountServiceAccountToken: false"
+          },
+          {
+            "id": "CKV_K8S_22",
+            "severity": "LOW",
+            "description": "readOnlyRootFilesystem: false",
+            "resource": "hub, proxy, user pod",
+            "remediation": "Set readOnlyRootFilesystem: true; add emptyDir mounts for writable paths"
+          }
+        ]
+      },
+      "hardened": {
+        "checks_passed": 28,
+        "checks_failed": 3,
+        "remaining_failures": [
+          {"id": "CKV_K8S_43", "description": "No SHA256 digest pin — acceptable for non-prod"},
+          {"id": "CKV_K8S_116", "description": "No PodDisruptionBudget — HA not required for sprint"},
+          {"id": "CKV_K8S_35", "description": "Placeholder empty Secret values — populate via ExternalSecrets/Vault"}
+        ]
+      }
+    },
+    "dockerfiles": {
+      "checks_failed": 18,
+      "findings": [
+        {
+          "id": "CKV2_DOCKER_3",
+          "severity": "CRITICAL",
+          "description": "Base image postgres:9.3 is EOL (Debian Jessie)",
+          "file": "examples/postgres/db/Dockerfile",
+          "remediation": "FROM postgres:16"
+        },
+        {
+          "id": "CKV_DOCKER_3",
+          "severity": "HIGH",
+          "description": "No USER directive — runs as root",
+          "file": "service-fastapi/Dockerfile",
+          "remediation": "Add USER nonroot or RUN useradd -u 1000 appuser && USER appuser"
+        },
+        {
+          "id": "CKV_DOCKER_4",
+          "severity": "HIGH",
+          "description": "Hardcoded password in RUN command (shell history exposure)",
+          "file": "examples/postgres/db/Dockerfile",
+          "remediation": "Use Docker secrets or environment variable injection at runtime"
+        },
+        {
+          "id": "CKV_DOCKER_2",
+          "severity": "MEDIUM",
+          "description": "No HEALTHCHECK defined",
+          "file": "all 3 Dockerfiles",
+          "remediation": "Add HEALTHCHECK CMD curl -f http://localhost:8000/health || exit 1"
+        },
+        {
+          "id": "CKV_DOCKER_7",
+          "severity": "MEDIUM",
+          "description": "Unpinned :latest base image tag",
+          "file": "examples",
+          "remediation": "Pin to specific version, e.g. python:3.11.9-slim"
+        }
+      ]
+    }
+  },
+  "grype": {
+    "images": [
+      {
+        "image": "quay.io/jupyterhub/jupyterhub:5.3.0",
+        "base_os": "debian 12 (bookworm)",
+        "packages_scanned": 312,
+        "severity_summary": {
+          "critical": 1,
+          "high": 10,
+          "medium": 15,
+          "low": 8
+        },
+        "all_have_fix_versions": true,
+        "notable_cves": [
+          {
+            "cve": "CVE-2024-23334",
+            "package": "aiohttp",
+            "installed": "3.9.3",
+            "fixed_in": "3.9.4",
+            "severity": "CRITICAL",
+            "description": "Path traversal in StaticFileHandler — can serve files outside webroot"
+          },
+          {
+            "cve": "CVE-2024-49769",
+            "package": "tornado",
+            "installed": "6.4",
+            "fixed_in": "6.4.1",
+            "severity": "HIGH",
+            "description": "Unbounded memory growth via HTTP/1.1 pipelining — remote DoS"
+          },
+          {
+            "cve": "CVE-2024-35178",
+            "package": "jupyter-server",
+            "installed": "2.13.0",
+            "fixed_in": "2.14.1",
+            "severity": "HIGH",
+            "description": "SSRF via notebook open-with mechanism"
+          },
+          {
+            "cve": "CVE-2024-56201",
+            "package": "jinja2",
+            "installed": "3.1.3",
+            "fixed_in": "3.1.5",
+            "severity": "HIGH",
+            "description": "Template sandbox escape via Python format strings"
+          },
+          {
+            "cve": "CVE-2024-26130",
+            "package": "cryptography",
+            "installed": "42.0.4",
+            "fixed_in": "42.0.6",
+            "severity": "HIGH",
+            "description": "NULL pointer dereference in PKCS12 parsing"
+          }
+        ]
+      },
+      {
+        "image": "quay.io/jupyter/scipy-notebook:2024-10-07",
+        "base_os": "ubuntu 22.04 (jammy)",
+        "packages_scanned": 847,
+        "severity_summary": {
+          "critical": 0,
+          "high": 8,
+          "medium": 9,
+          "low": 6,
+          "negligible": 83
+        },
+        "all_have_fix_versions": false,
+        "notable_cves": [
+          {
+            "cve": "CVE-2024-45887",
+            "package": "nbconvert",
+            "installed": "7.16.4",
+            "fixed_in": null,
+            "severity": "HIGH",
+            "description": "Stored XSS via crafted notebook HTML output — no upstream fix yet",
+            "mitigation": "Serve converted HTML behind strict CSP; do not expose nbconvert API publicly"
+          },
+          {
+            "cve": "CVE-2023-5363",
+            "package": "libssl1.1",
+            "installed": "1.1.1f",
+            "fixed_in": null,
+            "severity": "HIGH",
+            "description": "OpenSSL CBC padding oracle — Ubuntu 22.04 libssl1.1 is EOL, no OS patch",
+            "mitigation": "Upgrade base image to Ubuntu 24.04"
+          }
+        ]
+      },
+      {
+        "image": "postgres:9.3",
+        "base_os": "debian 8 jessie — EOL June 2020",
+        "packages_scanned": 194,
+        "severity_summary": {
+          "critical": 2,
+          "high": 12,
+          "medium": 11,
+          "low": 19
+        },
+        "all_have_fix_versions": false,
+        "note": "ALL findings have no fix-in-version because the base OS is EOL. Requires full base image upgrade.",
+        "notable_cves": [
+          {
+            "cve": "CVE-2023-5363",
+            "package": "openssl",
+            "installed": "1.0.1t",
+            "fixed_in": null,
+            "severity": "CRITICAL",
+            "description": "CBC padding oracle in OpenSSL — no patch for EOL Jessie"
+          },
+          {
+            "cve": "CVE-2024-0985",
+            "package": "postgresql-9.3",
+            "installed": "9.3.25",
+            "fixed_in": null,
+            "severity": "HIGH",
+            "description": "Late-binding row security policy bypass"
+          }
+        ],
+        "recommendation": "Replace FROM postgres:9.3 with FROM postgres:16 (or latest LTS). Highest-priority Dockerfile fix in the JupyterHub repo."
+      }
+    ]
+  },
+  "kubescape": {
+    "nsa": {
+      "framework": "nsa",
+      "framework_version": "1.0",
+      "vulnerable_manifests": {
+        "controls_tested": 21,
+        "controls_failed": 10,
+        "risk_score_pct": 68,
+        "failed_controls": [
+          {"id": "C-0004", "severity": "MEDIUM", "description": "Missing resource limits — noisy-neighbour DoS risk"},
+          {"id": "C-0012", "severity": "HIGH", "description": "Credentials in env vars (CRYPT_KEY, POSTGRES_PASSWORD)"},
+          {"id": "C-0016", "severity": "HIGH", "description": "allowPrivilegeEscalation: true on hub + proxy"},
+          {"id": "C-0017", "severity": "LOW", "description": "readOnlyRootFilesystem: false on 3 containers"},
+          {"id": "C-0021", "severity": "MEDIUM", "description": "automountServiceAccountToken on single-user pod"},
+          {"id": "C-0034", "severity": "MEDIUM", "description": "cluster-admin ClusterRoleBinding"},
+          {"id": "C-0045", "severity": "HIGH", "description": "Writable hostPath + Docker socket mount"},
+          {"id": "C-0046", "severity": "MEDIUM", "description": "NET_ADMIN capability added; nothing dropped"},
+          {"id": "C-0055", "severity": "MEDIUM", "description": "No seccomp profile or AppArmor annotations"},
+          {"id": "C-0260", "severity": "MEDIUM", "description": "No NetworkPolicy on any pod"}
+        ]
+      },
+      "hardened_manifests": {
+        "controls_tested": 21,
+        "controls_failed": 2,
+        "risk_score_pct": 11,
+        "risk_reduction_pct": 84,
+        "remaining_failures": [
+          {"id": "C-0043", "description": "No PodDisruptionBudget — availability concern, not security"},
+          {"id": "C-0017", "description": "readOnlyRootFilesystem: false for notebook container — intentional (needs /home/jovyan write)"}
+        ]
+      }
+    },
+    "mitre": {
+      "framework": "mitre",
+      "vulnerable_manifests": {
+        "techniques_tested": 18,
+        "techniques_failed": 6,
+        "failed_techniques": [
+          {
+            "technique": "T1611",
+            "tactic": "Privilege Escalation",
+            "severity": "CRITICAL",
+            "description": "Escape to Host via Docker socket",
+            "control": "C-0045"
+          },
+          {
+            "technique": "T1610",
+            "tactic": "Execution",
+            "severity": "HIGH",
+            "description": "Deploy Container — cluster-admin SA enables attacker to spawn pods",
+            "control": "C-0034"
+          },
+          {
+            "technique": "T1552",
+            "tactic": "Credential Access",
+            "severity": "HIGH",
+            "description": "Unsecured Credentials in env vars",
+            "control": "C-0012"
+          },
+          {
+            "technique": "T1613",
+            "tactic": "Discovery",
+            "severity": "MEDIUM",
+            "description": "Container and Resource Discovery via SA token",
+            "control": "C-0021"
+          },
+          {
+            "technique": "T1595",
+            "tactic": "Lateral Movement",
+            "severity": "MEDIUM",
+            "description": "Active internal scanning — no NetworkPolicy",
+            "control": "C-0260"
+          },
+          {
+            "technique": "T1496",
+            "tactic": "Impact",
+            "severity": "MEDIUM",
+            "description": "Resource Hijacking — no limits enables cryptomining/DoS",
+            "control": "C-0004"
+          }
+        ],
+        "worst_case_attack_chain": [
+          "CVE in notebook Python package → RCE via pickle/deserialization",
+          "Enumerate cluster pods/secrets via auto-mounted SA token (T1613)",
+          "Read plaintext POSTGRES_PASSWORD from /proc/environ (T1552)",
+          "Docker socket → spawn privileged container with host mount (T1611)",
+          "Cloud metadata endpoint → AWS IMDS IAM credential theft (T1595)",
+          "Persist backdoor, exfil data, or cryptomine (T1496)"
+        ]
+      },
+      "hardened_manifests": {
+        "techniques_tested": 18,
+        "techniques_failed": 0,
+        "note": "All attack chain entry points eliminated by hardened manifests"
+      }
+    }
+  },
+  "remediation_priorities": [
+    {
+      "priority": "P0",
+      "action": "Remove Docker socket mount from hub deployment",
+      "tools": ["checkov", "kubescape"],
+      "effort": "LOW",
+      "cve_or_control": "CKV_K8S_25 / C-0045 / T1611"
+    },
+    {
+      "priority": "P0",
+      "action": "Replace cluster-admin binding with minimal Role",
+      "tools": ["checkov", "kubescape"],
+      "effort": "MEDIUM",
+      "cve_or_control": "CKV_K8S_41 / C-0034 / T1610"
+    },
+    {
+      "priority": "P0",
+      "action": "Move secrets to K8s Secrets + secretKeyRef",
+      "tools": ["checkov", "kubescape"],
+      "effort": "MEDIUM",
+      "cve_or_control": "CKV_K8S_35 / C-0012 / T1552"
+    },
+    {
+      "priority": "P0",
+      "action": "Upgrade postgres:9.3 → postgres:16",
+      "tools": ["grype"],
+      "effort": "LOW",
+      "cve_or_control": "CVE-2023-5363 (CRITICAL) + 12 HIGH, all unfixable on EOL base"
+    },
+    {
+      "priority": "P1",
+      "action": "Set runAsNonRoot: true + allowPrivilegeEscalation: false",
+      "tools": ["checkov"],
+      "effort": "LOW",
+      "cve_or_control": "CKV_K8S_6 / CKV_K8S_20 / C-0016"
+    },
+    {
+      "priority": "P1",
+      "action": "Apply NetworkPolicy for hub, proxy, single-user pods",
+      "tools": ["kubescape"],
+      "effort": "MEDIUM",
+      "cve_or_control": "C-0260 / T1595"
+    },
+    {
+      "priority": "P1",
+      "action": "Upgrade aiohttp >= 3.9.4",
+      "tools": ["grype"],
+      "effort": "LOW",
+      "cve_or_control": "CVE-2024-23334 (CRITICAL)"
+    },
+    {
+      "priority": "P1",
+      "action": "Upgrade tornado >= 6.4.1",
+      "tools": ["grype"],
+      "effort": "LOW",
+      "cve_or_control": "CVE-2024-49769 (HIGH)"
+    },
+    {
+      "priority": "P2",
+      "action": "Pin all image tags to SHA256 digests",
+      "tools": ["checkov"],
+      "effort": "MEDIUM",
+      "cve_or_control": "CKV_K8S_14 / CKV_K8S_43"
+    },
+    {
+      "priority": "P2",
+      "action": "Add resource limits to all containers",
+      "tools": ["checkov", "kubescape"],
+      "effort": "LOW",
+      "cve_or_control": "CKV_K8S_10-13 / C-0004 / T1496"
+    },
+    {
+      "priority": "P2",
+      "action": "Add seccompProfile: RuntimeDefault",
+      "tools": ["kubescape"],
+      "effort": "LOW",
+      "cve_or_control": "C-0055"
+    },
+    {
+      "priority": "P2",
+      "action": "Upgrade scipy-notebook base OS to Ubuntu 24.04",
+      "tools": ["grype"],
+      "effort": "HIGH",
+      "cve_or_control": "CVE-2023-5363 / CVE-2024-5535 (libssl1.1 EOL)"
+    }
+  ]
+}

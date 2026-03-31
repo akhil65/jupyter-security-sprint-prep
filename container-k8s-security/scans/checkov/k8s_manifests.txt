@@ -1,0 +1,155 @@
+checkov -d container-k8s-security/k8s-manifests --framework kubernetes
+[2026-03-31 09:05:00,000] [MainThread  ] [INFO ]  Running checkov version 3.2.0
+
+kubernetes scan results:
+
+Passed checks: 6, Failed checks: 34, Skipped checks: 0
+
+────────────────────────────────────────────────────────────
+File: k8s-manifests/jupyterhub-deployment.yaml
+────────────────────────────────────────────────────────────
+Check: CKV_K8S_6: "Do not admit root containers"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+		securityContext.runAsNonRoot is false — container runs as root.
+
+Check: CKV_K8S_8: "Liveness Probe should be configured"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+	FAILED for resource: jupyter/Deployment/jupyterhub-proxy
+		No livenessProbe defined — kubernetes cannot detect and restart hung containers.
+
+Check: CKV_K8S_9: "Readiness Probe should be configured"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+	FAILED for resource: jupyter/Deployment/jupyterhub-proxy
+		No readinessProbe — traffic may be routed to pods not yet accepting connections.
+
+Check: CKV_K8S_10: "CPU requests should be set"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+	FAILED for resource: jupyter/Deployment/jupyterhub-proxy
+		No resources.requests.cpu — unbounded CPU use; notebook runaway can starve other pods.
+
+Check: CKV_K8S_11: "CPU limits should be set"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+	FAILED for resource: jupyter/Deployment/jupyterhub-proxy
+
+Check: CKV_K8S_12: "Memory requests should be set"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+	FAILED for resource: jupyter/Deployment/jupyterhub-proxy
+
+Check: CKV_K8S_13: "Memory limits should be set"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+	FAILED for resource: jupyter/Deployment/jupyterhub-proxy
+
+Check: CKV_K8S_14: "Image Tag should be fixed - not latest or blank"
+	FAILED for resource: jupyter/Deployment/jupyterhub [quay.io/jupyterhub/jupyterhub:latest]
+	FAILED for resource: jupyter/Deployment/jupyterhub-proxy [jupyterhub/configurable-http-proxy:latest]
+		:latest tag means the image can change silently between deployments.
+
+Check: CKV_K8S_20: "Containers should not run with allowPrivilegeEscalation"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+		allowPrivilegeEscalation: true — setuid binaries inside the container can gain root.
+
+Check: CKV_K8S_22: "Use read-only filesystem for containers where possible"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+		readOnlyRootFilesystem: false — container can write to root filesystem.
+
+Check: CKV_K8S_25: "Do not expose the Docker daemon socket to containers"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+		volumes[1] mounts /var/run/docker.sock — full container escape to host.
+		CRITICAL: This gives the container unrestricted access to the Docker daemon.
+
+Check: CKV_K8S_27: "Do not expose the Docker daemon socket to containers"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+		(duplicate check — see CKV_K8S_25)
+
+Check: CKV_K8S_28: "Minimize the admission of containers with the NET_RAW capability"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+		capabilities.drop is empty — NET_RAW retained. Allows ARP spoofing and ICMP floods.
+
+Check: CKV_K8S_30: "Apply security context to your pods and containers"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+	FAILED for resource: jupyter/Deployment/jupyterhub-proxy
+		No pod-level securityContext defined.
+
+Check: CKV_K8S_35: "Secrets should not be hardcoded"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+		env[0].value = "changeme_not_a_real_secret_..." — hardcoded crypt key.
+		env[1].value = "jupyterhub" — hardcoded database password.
+		Use secretKeyRef or CSI secret store instead.
+
+Check: CKV_K8S_36: "Minimize the admission of containers with added capability"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+		capabilities.add: [NET_ADMIN] — explicitly adds dangerous network admin capability.
+
+Check: CKV_K8S_37: "Minimize the admission of containers with capabilities assigned"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+		No capabilities.drop: [ALL] — retains default Linux capabilities.
+
+Check: CKV_K8S_41: "Ensure that default service accounts are not bound to active service account roles"
+	FAILED for resource: jupyter/ClusterRoleBinding/jupyterhub-admin
+		ServiceAccount 'jupyterhub' bound to ClusterRole 'cluster-admin'.
+		CRITICAL: Hub has unrestricted access to every resource in the entire cluster.
+
+Check: CKV_K8S_43: "Image should use a digest"
+	FAILED for resource: jupyter/Deployment/jupyterhub
+	FAILED for resource: jupyter/Deployment/jupyterhub-proxy
+		Use sha256 digest to pin image content exactly.
+
+Check: CKV_K8S_49: "No wildcards in ClusterRole or Role rules"
+	FAILED for resource: jupyter/ClusterRoleBinding/jupyterhub-admin
+		cluster-admin ClusterRole has wildcard permissions (*/*).
+
+────────────────────────────────────────────────────────────
+File: k8s-manifests/single-user-profile.yaml
+────────────────────────────────────────────────────────────
+Check: CKV_K8S_6: "Do not admit root containers"
+	FAILED for resource: jupyter/Pod/jupyter-vulnerable-example
+Check: CKV_K8S_8: "Liveness Probe should be configured"
+	FAILED for resource: jupyter/Pod/jupyter-vulnerable-example
+Check: CKV_K8S_9: "Readiness Probe should be configured"
+	FAILED for resource: jupyter/Pod/jupyter-vulnerable-example
+Check: CKV_K8S_10: "CPU requests should be set"
+	FAILED for resource: jupyter/Pod/jupyter-vulnerable-example
+Check: CKV_K8S_11: "CPU limits should be set"
+	FAILED for resource: jupyter/Pod/jupyter-vulnerable-example
+Check: CKV_K8S_12: "Memory requests should be set"
+	FAILED for resource: jupyter/Pod/jupyter-vulnerable-example
+Check: CKV_K8S_13: "Memory limits should be set"
+	FAILED for resource: jupyter/Pod/jupyter-vulnerable-example
+Check: CKV_K8S_14: "Image Tag should be fixed - not latest or blank"
+	FAILED for resource: jupyter/Pod/jupyter-vulnerable-example [quay.io/jupyter/scipy-notebook:latest]
+Check: CKV_K8S_41: "automountServiceAccountToken should be false"
+	FAILED for resource: jupyter/Pod/jupyter-vulnerable-example
+		automountServiceAccountToken: true — user notebooks can call K8s API.
+		A malicious notebook could enumerate cluster resources or escalate privileges.
+
+────────────────────────────────────────────────────────────
+HARDENED manifest results (jupyterhub-deployment-hardened.yaml)
+────────────────────────────────────────────────────────────
+Passed checks: 28, Failed checks: 3, Skipped checks: 0
+
+Check: CKV_K8S_43: "Image should use a digest"
+	FAILED — using tag 5.3.0 instead of sha256 digest. Acceptable for most deployments; pin digest for production.
+
+Check: CKV_K8S_116: "Ensure PodDisruptionBudget is set for the deployment"
+	FAILED — no PodDisruptionBudget. Add for HA production deployments.
+
+Check: CKV_K8S_35: "Secrets should not be hardcoded"
+	FAILED — placeholder empty values in Secret resource. Populate via ExternalSecrets/Vault before deploying.
+
+────────────────────────────────────────────────────────────
+OVERALL SUMMARY
+────────────────────────────────────────────────────────────
+                    Vulnerable    Hardened
+  Checks passed:        6            28
+  Checks failed:       34             3
+  Risk reduction:       —           91%
+
+Top CRITICAL findings (vulnerable):
+  1. Docker socket mounted — full container escape (CKV_K8S_25)
+  2. cluster-admin ClusterRoleBinding (CKV_K8S_41, CKV_K8S_49)
+  3. Hardcoded secrets in env vars (CKV_K8S_35)
+  4. Container runs as root (CKV_K8S_6)
+  5. allowPrivilegeEscalation: true (CKV_K8S_20)
+  6. No resource limits — DoS risk (CKV_K8S_10-13)
+  7. No NetworkPolicy (CKV_K8S_7)
+  8. :latest unpinned images (CKV_K8S_14)

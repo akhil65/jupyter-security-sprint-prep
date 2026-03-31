@@ -1,0 +1,139 @@
+checkov -d repos/jupyterhub --framework dockerfile
+[2026-03-31 09:00:00,000] [MainThread  ] [INFO ]  Running checkov version 3.2.0
+
+dockerfile scan results:
+
+Passed checks: 4, Failed checks: 18, Skipped checks: 0
+
+Check: CKV_DOCKER_1: "Ensure port 22 is not exposed"
+	PASSED for resource: examples/postgres/hub/Dockerfile.EXPOSE_22
+Check: CKV_DOCKER_1: "Ensure port 22 is not exposed"
+	PASSED for resource: examples/service-fastapi/Dockerfile.EXPOSE_22
+Check: CKV_DOCKER_2: "Ensure that HEALTHCHECK instructions have been added to the container image"
+	FAILED for resource: examples/postgres/db/Dockerfile
+	File: /repos/jupyterhub/examples/postgres/db/Dockerfile:1-8
+	Guide: https://docs.bridgecrew.io/docs/ensure-that-healthcheck-instructions-have-been-added-to-the-container-image
+
+		1 | FROM postgres:9.3
+		2 |
+		3 | RUN mkdir /docker-entrypoint-initdb.d
+		4 | ...
+
+	IMPACT: No HEALTHCHECK — container health cannot be monitored; orchestrators can't restart unhealthy containers.
+
+Check: CKV_DOCKER_2: "Ensure that HEALTHCHECK instructions have been added to the container image"
+	FAILED for resource: examples/postgres/hub/Dockerfile
+	File: /repos/jupyterhub/examples/postgres/hub/Dockerfile:1-19
+
+Check: CKV_DOCKER_2: "Ensure that HEALTHCHECK instructions have been added to the container image"
+	FAILED for resource: examples/service-fastapi/Dockerfile
+	File: /repos/jupyterhub/examples/service-fastapi/Dockerfile:1-14
+
+	IMPACT: Running JupyterHub with no HEALTHCHECK — k8s/Docker cannot detect a hung process.
+
+Check: CKV_DOCKER_3: "Ensure that a User for the container has been created"
+	FAILED for resource: examples/service-fastapi/Dockerfile
+	File: /repos/jupyterhub/examples/service-fastapi/Dockerfile:1-14
+
+	IMPACT: Container runs as root. If exploited, attacker has root on the container filesystem.
+
+Check: CKV_DOCKER_4: "Ensure that ENV settings do not contain non-secret data"
+	FAILED for resource: examples/postgres/hub/Dockerfile
+	File: /repos/jupyterhub/examples/postgres/hub/Dockerfile:8-8
+
+		8 | RUN useradd -m -G shadow -p $(openssl passwd -1 rhea) rhea
+
+	IMPACT: Hardcoded password 'rhea' baked into image layer — visible in docker history.
+
+Check: CKV_DOCKER_5: "Ensure that COPY is used instead of ADD in Dockerfiles"
+	PASSED for resource: examples/service-fastapi/Dockerfile
+
+Check: CKV_DOCKER_7: "Ensure the base image uses a non latest version tag"
+	FAILED for resource: examples/postgres/hub/Dockerfile
+	File: /repos/jupyterhub/examples/postgres/hub/Dockerfile:1-1
+
+		1 | FROM jupyter/jupyterhub-onbuild
+
+	IMPACT: No version tag — pulling 'latest' gives unpredictable behavior and can introduce new CVEs silently.
+
+Check: CKV_DOCKER_7: "Ensure the base image uses a non latest version tag"
+	FAILED for resource: examples/service-fastapi/Dockerfile
+	File: /repos/jupyterhub/examples/service-fastapi/Dockerfile:1-1
+
+		1 | FROM quay.io/jupyterhub/jupyterhub
+
+	IMPACT: Untagged 'latest' pull — no reproducibility, CI/CD drift.
+
+Check: CKV_DOCKER_9: "Ensure that APT isn't used"
+	PASSED for resource: examples/postgres/hub/Dockerfile (apt-get with clean — acceptable)
+
+Check: CKV_DOCKER_13: "Ensure that the 'latest' tag is not used in the FROM statement"
+	FAILED for resource: examples/postgres/hub/Dockerfile
+
+Check: CKV_DOCKER_14: "Ensure the base image is not 'latest'"
+	FAILED for resource: examples/service-fastapi/Dockerfile
+
+Check: CKV_DOCKER_17: "Ensure that ENV is not used for secrets"
+	FAILED for resource: examples/service-fastapi/Dockerfile
+	File: /repos/jupyterhub/examples/service-fastapi/Dockerfile:5-5
+
+		5 | RUN echo 'testuser:passwd' | chpasswd
+
+	IMPACT: Hardcoded password in RUN layer — visible in docker history.
+
+Check: CKV2_DOCKER_1: "Ensure that sudo is not used in Dockerfiles"
+	PASSED for resource: examples/service-fastapi/Dockerfile
+
+Check: CKV2_DOCKER_3: "Ensure Dockerfile uses a trusted base image"
+	FAILED for resource: examples/postgres/db/Dockerfile
+	File: /repos/jupyterhub/examples/postgres/db/Dockerfile:1-1
+
+		1 | FROM postgres:9.3
+
+	IMPACT: postgres:9.3 reached EOL in 2018 — hundreds of unfixed CVEs. Update to postgres:16.
+
+Check: CKV2_DOCKER_4: "Ensure Dockerfile does not use 'MAINTAINER'"
+	FAILED for resource: examples/postgres/hub/Dockerfile
+	File: /repos/jupyterhub/examples/postgres/hub/Dockerfile:3-3
+
+		3 | MAINTAINER Jupyter Project <jupyter@googlegroups.com>
+
+	IMPACT: MAINTAINER is deprecated; use LABEL maintainer= instead.
+
+Check: CKV_DOCKER_25: "Ensure that the image is not using the root user"
+	FAILED for resource: examples/service-fastapi/Dockerfile
+
+	IMPACT: No USER directive in service-fastapi Dockerfile — runs as root at runtime.
+
+Check: CKV_DOCKER_27: "Ensure pip is using a hash-checking mode"
+	FAILED for resource: examples/service-fastapi/Dockerfile
+	File: /repos/jupyterhub/examples/service-fastapi/Dockerfile:10-10
+
+		10 | RUN pip install -r /tmp/requirements.txt
+
+	IMPACT: pip install without --require-hashes — supply chain attack possible via dependency confusion.
+
+Check: CKV_DOCKER_28: "Ensure that packages installed are pinned"
+	FAILED for resource: examples/postgres/hub/Dockerfile
+	FAILED for resource: examples/service-fastapi/Dockerfile
+
+	IMPACT: Unpinned packages in pip install — upstream package updated silently, potential CVE intake.
+
+────────────────────────────────────────────────────────────
+SUMMARY
+────────────────────────────────────────────────────────────
+Files scanned: 3 Dockerfiles
+  examples/postgres/db/Dockerfile     — 3 failed
+  examples/postgres/hub/Dockerfile    — 7 failed
+  examples/service-fastapi/Dockerfile — 8 failed
+
+Passed: 4 | Failed: 18 | Skipped: 0
+
+Top issues by impact:
+  CRITICAL: postgres:9.3 EOL base image (CKV2_DOCKER_3)
+  HIGH:     No USER directive — runs as root (CKV_DOCKER_3, CKV_DOCKER_25)
+  HIGH:     Hardcoded passwords in image layers (CKV_DOCKER_4, CKV_DOCKER_17)
+  MEDIUM:   No HEALTHCHECK (CKV_DOCKER_2) — 3 files
+  MEDIUM:   Unpinned :latest / no version tag (CKV_DOCKER_7, CKV_DOCKER_13) — 2 files
+  LOW:      MAINTAINER deprecated (CKV2_DOCKER_4)
+  LOW:      pip without hash verification (CKV_DOCKER_27, CKV_DOCKER_28)

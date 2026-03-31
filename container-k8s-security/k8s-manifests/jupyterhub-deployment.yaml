@@ -1,0 +1,189 @@
+# ============================================================
+# JupyterHub Kubernetes Deployment — INTENTIONALLY VULNERABLE
+# ============================================================
+# This file is a security training artifact. It demonstrates
+# common Kubernetes misconfigurations found in real JupyterHub
+# deployments. Each vulnerability is labelled with the checkov
+# and kubescape rule IDs that would flag it.
+#
+# A hardened version of this manifest is in:
+#   k8s-manifests/jupyterhub-deployment-hardened.yaml
+# ============================================================
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jupyter
+
+---
+# VULN: Default ServiceAccount used — no dedicated SA with minimal permissions (CKV_K8S_41)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jupyterhub
+  namespace: jupyter
+
+---
+# VULN: ClusterRoleBinding — hub gets full cluster-admin (C-0034, CKV_K8S_49)
+# JupyterHub legitimately needs to create/delete Pods for single-user servers,
+# but cluster-admin is far too broad. Should use a narrowly-scoped Role + RoleBinding.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: jupyterhub-admin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: jupyterhub
+    namespace: jupyter
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupyterhub
+  namespace: jupyter
+  labels:
+    app: jupyterhub
+    component: hub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jupyterhub
+      component: hub
+  template:
+    metadata:
+      labels:
+        app: jupyterhub
+        component: hub
+    spec:
+      serviceAccountName: jupyterhub
+
+      # ── Pod-level security ─────────────────────────────────────
+      # VULN: No securityContext at pod level (CKV_K8S_30, C-0055)
+      # Missing: runAsNonRoot, runAsUser, fsGroup, seccompProfile
+      # securityContext: {}
+
+      containers:
+        - name: hub
+          # VULN: Mutable tag :latest — not reproducible, unpinned CVE surface (CKV_K8S_14, CKV_K8S_15)
+          image: quay.io/jupyterhub/jupyterhub:latest
+
+          ports:
+            - name: http
+              containerPort: 8000
+            - name: api
+              containerPort: 8081
+
+          # ── Container-level security ──────────────────────────
+          securityContext:
+            # VULN: Container runs as root (CKV_K8S_6, C-0016)
+            runAsNonRoot: false
+            # VULN: Allows privilege escalation via setuid binaries (CKV_K8S_20, C-0016)
+            allowPrivilegeEscalation: true
+            # VULN: Writable root filesystem (CKV_K8S_22, C-0017)
+            readOnlyRootFilesystem: false
+            # VULN: Retains NET_RAW — allows ARP spoofing, ICMP floods (CKV_K8S_28, C-0046)
+            capabilities:
+              drop: []   # nothing dropped — all capabilities retained
+              add:
+                - NET_ADMIN  # VULN: NET_ADMIN explicitly added (CKV_K8S_36, C-0046)
+
+          env:
+            - name: JUPYTERHUB_CRYPT_KEY
+              # VULN: Hardcoded secret in env var (CKV_K8S_35, C-0012)
+              value: "changeme_not_a_real_secret_00000000000000000000000000000000"
+            - name: POSTGRES_PASSWORD
+              # VULN: Another hardcoded credential (CKV_K8S_35, C-0012)
+              value: "jupyterhub"
+
+          # ── Resource limits ─────────────────────────────────────
+          # VULN: No resource requests or limits (CKV_K8S_10-13, C-0004)
+          # A runaway notebook process can exhaust node CPU/memory (noisy-neighbour DoS).
+          # resources: {}
+
+          # ── Probes ──────────────────────────────────────────────
+          # VULN: No liveness probe (CKV_K8S_8) — k8s cannot detect a hung hub
+          # VULN: No readiness probe (CKV_K8S_9) — traffic routed to unready pod
+          # livenessProbe: {}
+          # readinessProbe: {}
+
+          volumeMounts:
+            - name: hub-db
+              mountPath: /srv/jupyterhub
+            - name: docker-socket
+              # VULN: Docker socket mounted — container escape to host (CKV_K8S_27, C-0058)
+              mountPath: /var/run/docker.sock
+
+      volumes:
+        - name: hub-db
+          # VULN: hostPath volume — mounts from host node, breaks pod isolation (CKV_K8S_25, C-0045)
+          hostPath:
+            path: /srv/jupyterhub
+            type: DirectoryOrCreate
+        - name: docker-socket
+          # VULN: Docker daemon socket on host — full container escape path (CKV_K8S_27)
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
+
+---
+# JupyterHub Proxy (configurable-http-proxy)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupyterhub-proxy
+  namespace: jupyter
+  labels:
+    app: jupyterhub
+    component: proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jupyterhub
+      component: proxy
+  template:
+    metadata:
+      labels:
+        app: jupyterhub
+        component: proxy
+    spec:
+      containers:
+        - name: proxy
+          # VULN: Unpinned image (CKV_K8S_14)
+          image: jupyterhub/configurable-http-proxy:latest
+          ports:
+            - containerPort: 8000
+            - containerPort: 8001
+          # VULN: No securityContext (CKV_K8S_6, CKV_K8S_20, CKV_K8S_22)
+          # VULN: No resource limits (CKV_K8S_10-13)
+          # VULN: No probes (CKV_K8S_8, CKV_K8S_9)
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jupyterhub
+  namespace: jupyter
+spec:
+  # VULN: NodePort exposes the hub directly on every node's IP (C-0021)
+  # Should use ClusterIP + Ingress controller with TLS termination.
+  type: NodePort
+  selector:
+    app: jupyterhub
+    component: hub
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+      nodePort: 30080  # VULN: Fixed NodePort — predictable attack surface
+    - name: api
+      port: 8081
+      targetPort: 8081
+      nodePort: 30081  # VULN: Hub API port also exposed externally

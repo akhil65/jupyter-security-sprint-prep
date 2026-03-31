@@ -1,0 +1,54 @@
+# ============================================================
+# kind (Kubernetes IN Docker) cluster configuration
+# for the Jupyter Security Sprint sandbox
+# ============================================================
+# Prerequisites:
+#   docker >= 24.0
+#   kind >= 0.23    (https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
+#   kubectl >= 1.29
+#   helm >= 3.14
+#
+# Create cluster: kind create cluster --config kind-config.yaml
+# Delete cluster: kind delete cluster --name jupyter-security
+# ============================================================
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: jupyter-security
+
+# Two-node cluster: 1 control-plane + 1 worker.
+# The worker is where notebook pods land.
+nodes:
+  - role: control-plane
+    # Expose port 80/443 on localhost so the Ingress controller is reachable
+    # at http://localhost and https://localhost from your machine.
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
+      - containerPort: 30080   # NodePort fallback for hub (vulnerable demo)
+        hostPort: 30080
+        protocol: TCP
+
+  - role: worker
+    # Label used by JupyterHub node selector (optional)
+    # kubeadmConfigPatches:
+    #   - |
+    #     kind: JoinConfiguration
+    #     nodeRegistration:
+    #       kubeletExtraArgs:
+    #         node-labels: "hub.jupyter.org/node-purpose=user"
+
+# Pod Subnet — avoid clashing with host network
+networking:
+  podSubnet: "10.244.0.0/16"
+  serviceSubnet: "10.96.0.0/16"
+  # Set to true to disable the default CNI (if you want Calico/Cilium for NetworkPolicy)
+  disableDefaultCNI: false
+  # NOTE: kind's default CNI (kindnet) does NOT enforce NetworkPolicy.
+  # To test NetworkPolicy enforcement, disable default CNI and install Calico:
+  #   disableDefaultCNI: true
+  # Then run: kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml

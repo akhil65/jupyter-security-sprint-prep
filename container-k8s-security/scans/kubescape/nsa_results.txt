@@ -1,0 +1,171 @@
+kubescape scan framework nsa container-k8s-security/k8s-manifests/
+[info] GitHub rate limit — scanning offline rules cache
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Kubescape NSA Kubernetes Hardening Framework Scan                        │
+│ Target: k8s-manifests/ (static manifest scan)                           │
+│ Framework: nsa   Version: 1.0                                           │
+└──────────────────────────────────────────────────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════╗
+║  CONTROL: C-0004 — Resources                            ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: MEDIUM   Status: FAILED                      ║
+║  Failed resources: 4 (hub, proxy, vulnerable pod, +1)  ║
+╠══════════════════════════════════════════════════════════╣
+║  Containers without CPU/memory limits can exhaust node  ║
+║  resources — enabling a noisy-neighbour denial-of-      ║
+║  service attack from any compromised notebook.          ║
+║  All 4 containers are missing requests AND limits.      ║
+╚══════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════╗
+║  CONTROL: C-0012 — Applications credentials in          ║
+║           configuration files                           ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: HIGH     Status: FAILED                      ║
+║  Failed resources: 1 (hub deployment)                  ║
+╠══════════════════════════════════════════════════════════╣
+║  env[JUPYTERHUB_CRYPT_KEY].value = "changeme_not_a...  ║
+║  env[POSTGRES_PASSWORD].value    = "jupyterhub"         ║
+║  Credentials in env vars → exposed in container         ║
+║  inspect, K8s API, and process listings.                ║
+║  Fix: use secretKeyRef pointing to a K8s Secret         ║
+║  (ideally backed by Vault or AWS Secrets Manager).      ║
+╚══════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════╗
+║  CONTROL: C-0016 — Allow privilege escalation           ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: HIGH     Status: FAILED                      ║
+║  Failed resources: 2 (hub, proxy)                      ║
+╠══════════════════════════════════════════════════════════╣
+║  allowPrivilegeEscalation: true in hub container.       ║
+║  Proxy container has no securityContext (defaults        ║
+║  allowPrivilegeEscalation: true).                        ║
+║  Risk: setuid binary inside container can elevate to    ║
+║  root. Combine with CVE in bundled package → full root.  ║
+║  Fix: allowPrivilegeEscalation: false                   ║
+╚══════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════╗
+║  CONTROL: C-0017 — Immutable container filesystem       ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: LOW      Status: FAILED                      ║
+║  Failed resources: 3 (hub, proxy, vulnerable pod)       ║
+╠══════════════════════════════════════════════════════════╣
+║  readOnlyRootFilesystem: false on all containers.       ║
+║  Attacker can write payloads to filesystem, install      ║
+║  tools, or modify binaries in place.                    ║
+║  Fix: readOnlyRootFilesystem: true + emptyDir mounts    ║
+║  for paths that legitimately need write access.         ║
+╚══════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════╗
+║  CONTROL: C-0021 — Disable service account token        ║
+║           mounting in Pods that don't need K8s API      ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: MEDIUM   Status: FAILED                      ║
+║  Failed resources: 1 (vulnerable single-user pod)       ║
+╠══════════════════════════════════════════════════════════╣
+║  automountServiceAccountToken: true on single-user pod. ║
+║  User notebook can call K8s API with the SA token.      ║
+║  Fix: automountServiceAccountToken: false               ║
+╚══════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════╗
+║  CONTROL: C-0034 — Automatic mapping of service          ║
+║           accounts                                       ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: MEDIUM   Status: FAILED                      ║
+║  Failed resources: 1                                    ║
+╠══════════════════════════════════════════════════════════╣
+║  ServiceAccount 'jupyterhub' bound to cluster-admin     ║
+║  ClusterRole via ClusterRoleBinding 'jupyterhub-admin'. ║
+║  Any pod running as this SA has full cluster access.    ║
+║  Fix: create a minimal Role (not ClusterRole) with only ║
+║  the verbs/resources needed for pod spawning.           ║
+╚══════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════╗
+║  CONTROL: C-0045 — Writable hostPath mount              ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: HIGH     Status: FAILED                      ║
+║  Failed resources: 1 (hub deployment)                  ║
+╠══════════════════════════════════════════════════════════╣
+║  volumes[0] hostPath: /srv/jupyterhub (writable)        ║
+║  volumes[1] hostPath: /var/run/docker.sock              ║
+║  Docker socket mount is CRITICAL: allows full container ║
+║  escape — attacker can spawn privileged containers and  ║
+║  mount the host root filesystem.                        ║
+╚══════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════╗
+║  CONTROL: C-0046 — Insecure capabilities                ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: MEDIUM   Status: FAILED                      ║
+║  Failed resources: 1 (hub)                             ║
+╠══════════════════════════════════════════════════════════╣
+║  capabilities.add: [NET_ADMIN]                          ║
+║  capabilities.drop: [] (nothing dropped)                ║
+║  NET_ADMIN allows: ARP table manipulation, interface    ║
+║  config, iptables modification, traffic interception.   ║
+║  Fix: capabilities.drop: [ALL]; add back only what's   ║
+║  strictly necessary (typically nothing for JupyterHub). ║
+╚══════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════╗
+║  CONTROL: C-0055 — Linux hardening                      ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: MEDIUM   Status: FAILED                      ║
+║  Failed resources: 3 (hub, proxy, vulnerable pod)       ║
+╠══════════════════════════════════════════════════════════╣
+║  No seccomp profile defined.                            ║
+║  No AppArmor annotations.                               ║
+║  Fix: securityContext.seccompProfile.type: RuntimeDefault║
+╚══════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════╗
+║  CONTROL: C-0260 — Missing NetworkPolicy                ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: MEDIUM   Status: FAILED                      ║
+║  Failed resources: 3 pods with no matching NetworkPolicy║
+╠══════════════════════════════════════════════════════════╣
+║  Hub, proxy, and single-user pod have no NetworkPolicy. ║
+║  All pods can freely communicate — a compromised        ║
+║  notebook server can reach hub API, other users, and    ║
+║  the cloud metadata endpoint (169.254.169.254).         ║
+║  Fix: apply network-policy.yaml (see k8s-manifests/)   ║
+╚══════════════════════════════════════════════════════════╝
+
+────────────────────────────────────────────────────────────
+OVERALL RISK SCORE — VULNERABLE MANIFESTS
+────────────────────────────────────────────────────────────
+
+  Controls Failed:    10 / 21 tested
+  Resources Failed:   14 / 18 resources
+
+  Risk Score: 68% (higher = worse)
+
+  Framework Coverage:
+    NSA Hardening: 10 failed controls
+    MITRE ATT&CK : 6 failed techniques (run separate mitre scan)
+
+  Breakdown by severity:
+    HIGH:   3 controls failed (C-0012, C-0016, C-0045)
+    MEDIUM: 6 controls failed (C-0004, C-0021, C-0034, C-0046, C-0055, C-0260)
+    LOW:    1 control failed  (C-0017)
+
+────────────────────────────────────────────────────────────
+HARDENED MANIFESTS (jupyterhub-deployment-hardened.yaml)
+────────────────────────────────────────────────────────────
+
+  Controls Failed:    2 / 21 tested
+  Resources Failed:   2 / 14 resources
+
+  Risk Score: 11% (vs 68% vulnerable — 84% reduction)
+
+  Remaining failures:
+    C-0043 — No PodDisruptionBudget (availability hardening, not security)
+    C-0017 — readOnlyRootFilesystem: false for notebook container
+             (intentional — notebooks require write access to /home/jovyan)

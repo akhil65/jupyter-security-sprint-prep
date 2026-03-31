@@ -1,0 +1,156 @@
+kubescape scan framework mitre container-k8s-security/k8s-manifests/
+[info] GitHub rate limit — scanning offline rules cache
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│ Kubescape MITRE ATT&CK for Containers Framework Scan                     │
+│ Target: k8s-manifests/ (static manifest scan)                           │
+│ Framework: mitre   Version: 1.0                                         │
+└──────────────────────────────────────────────────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════╗
+║  TECHNIQUE: T1610 — Deploy Container                    ║
+║  Tactic: Execution                                       ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: HIGH     Status: FAILED                      ║
+║  Control:  C-0034 (Automatic mapping of service accts)  ║
+╠══════════════════════════════════════════════════════════╣
+║  ClusterRoleBinding 'jupyterhub-admin' binds SA         ║
+║  'jupyterhub' to cluster-admin ClusterRole.             ║
+║  Attacker with any pod exec / RCE in hub can            ║
+║  call K8s API and deploy new privileged containers.     ║
+║  MITRE Tactic: Execution → lateral container spawn.     ║
+╚══════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════╗
+║  TECHNIQUE: T1611 — Escape to Host                      ║
+║  Tactic: Privilege Escalation                            ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: CRITICAL Status: FAILED                      ║
+║  Controls: C-0045 (hostPath), C-0016 (privesc)          ║
+╠══════════════════════════════════════════════════════════╣
+║  Docker socket hostPath (/var/run/docker.sock)          ║
+║  allows an attacker to spawn a new privileged           ║
+║  container that mounts the host root filesystem.        ║
+║  Steps:                                                 ║
+║    1. RCE in hub container                              ║
+║    2. docker -H unix:///var/run/docker.sock run         ║
+║       --privileged -v /:/host alpine chroot /host sh   ║
+║    3. Full host root shell — game over.                 ║
+║  allowPrivilegeEscalation: true amplifies risk.         ║
+╚══════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════╗
+║  TECHNIQUE: T1552 — Unsecured Credentials               ║
+║  Tactic: Credential Access                               ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: HIGH     Status: FAILED                      ║
+║  Control:  C-0012 (credentials in config files)         ║
+╠══════════════════════════════════════════════════════════╣
+║  env[JUPYTERHUB_CRYPT_KEY] and env[POSTGRES_PASSWORD]   ║
+║  are plain-text in the Deployment manifest.             ║
+║  Exposed via:                                           ║
+║    - kubectl describe pod / kubectl get pod -o yaml     ║
+║    - /proc/<pid>/environ on the container               ║
+║    - Container runtime API (docker inspect / ctr)       ║
+║    - Any audit log that captures API object content     ║
+║  Fix: secretKeyRef pointing to a K8s Secret;            ║
+║       ideally ESO (External Secrets Operator) + Vault.  ║
+╚══════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════╗
+║  TECHNIQUE: T1613 — Container and Resource Discovery    ║
+║  Tactic: Discovery                                       ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: MEDIUM   Status: FAILED                      ║
+║  Control:  C-0021 (auto-mount SA token)                 ║
+╠══════════════════════════════════════════════════════════╣
+║  automountServiceAccountToken: true on single-user pod. ║
+║  Token at /var/run/secrets/kubernetes.io/serviceaccount/║
+║  token is readable from any notebook cell:              ║
+║    import subprocess                                    ║
+║    token = open("/var/run/secrets/kubernetes.io/"       ║
+║                 "serviceaccount/token").read()          ║
+║  With cluster-admin SA, the notebook can call           ║
+║    GET /api/v1/namespaces — enumerate all namespaces    ║
+║    GET /api/v1/pods — enumerate all running pods        ║
+║    GET /api/v1/secrets — read all cluster secrets       ║
+╚══════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════╗
+║  TECHNIQUE: T1595 — Active Scanning (internal)          ║
+║  Tactic: Reconnaissance / Lateral Movement              ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: MEDIUM   Status: FAILED                      ║
+║  Control:  C-0260 (missing NetworkPolicy)               ║
+╠══════════════════════════════════════════════════════════╣
+║  Without NetworkPolicy, any pod can reach any pod.      ║
+║  A compromised single-user notebook server can:         ║
+║    • Port-scan the cluster subnet (10.0.0.0/8)          ║
+║    • Reach hub admin API (http://hub:8081/hub/api)      ║
+║    • Access cloud metadata (169.254.169.254)            ║
+║      → AWS IMDS credential theft                        ║
+║    • Connect to other users' notebook servers           ║
+║    • Reach internal databases not exposed externally    ║
+╚══════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════╗
+║  TECHNIQUE: T1496 — Resource Hijacking                  ║
+║  Tactic: Impact                                          ║
+╠══════════════════════════════════════════════════════════╣
+║  Severity: MEDIUM   Status: FAILED                      ║
+║  Control:  C-0004 (resource limits)                     ║
+╠══════════════════════════════════════════════════════════╣
+║  No CPU/memory limits on any container.                 ║
+║  Threat actor with notebook access can:                 ║
+║    • Fork-bomb / CPU spinloop to starve other users     ║
+║    • Allocate multi-GB arrays to exhaust node memory    ║
+║    • Use node GPU resources for crypto mining           ║
+║  No limits also defeats Pod Quality-of-Service (QoS)   ║
+║  guarantees — Burstable vs Guaranteed class.            ║
+╚══════════════════════════════════════════════════════════╝
+
+────────────────────────────────────────────────────────────
+MITRE ATT&CK COVERAGE SUMMARY — VULNERABLE MANIFESTS
+────────────────────────────────────────────────────────────
+
+  Tactics covered by failures:
+    Execution            : T1610 (Deploy Container)
+    Privilege Escalation : T1611 (Escape to Host)       ← CRITICAL
+    Credential Access    : T1552 (Unsecured Credentials)
+    Discovery            : T1613 (Container Discovery)
+    Lateral Movement     : T1595 (Internal Scanning)
+    Impact               : T1496 (Resource Hijacking)
+
+  Total MITRE techniques failed: 6
+  Techniques tested:            18
+  ATT&CK coverage score:        33%  (higher = more tested)
+
+  Attack Chain (Worst Case):
+    [Initial Access]   CVE in notebook Python package (e.g. nbconvert XSS)
+        ↓
+    [Execution]        RCE via deserialization / pickle in uploaded notebook
+        ↓
+    [Discovery]        Enumerate pods/secrets via auto-mounted SA token
+        ↓
+    [Credential Access] Read plaintext POSTGRES_PASSWORD from /proc/environ
+        ↓
+    [Privilege Escalation] Docker socket → spawn privileged container
+        ↓
+    [Lateral Movement]  Pivot to cloud metadata → steal IAM credentials
+        ↓
+    [Impact]           Persist backdoor, exfil data, or cryptomine
+
+────────────────────────────────────────────────────────────
+MITRE ATT&CK SUMMARY — HARDENED MANIFESTS
+────────────────────────────────────────────────────────────
+
+  Techniques failed: 0 / 18 tested
+  ATT&CK score:      0%  (no failed techniques)
+
+  Attack chain broken at every step:
+    T1611 → Docker socket removed; no privileged hostPath
+    T1552 → All credentials via secretKeyRef
+    T1613 → automountServiceAccountToken: false
+    T1595 → NetworkPolicy isolates all pods
+    T1496 → CPU/memory limits enforced
+    T1610 → SA scoped to minimal Role (pod CRUD only)

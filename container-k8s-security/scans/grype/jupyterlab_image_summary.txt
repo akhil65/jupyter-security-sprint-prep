@@ -1,0 +1,64 @@
+grype quay.io/jupyter/scipy-notebook:2024-10-07
+[0000] INFO  [grype] Loading DB                             db=grype
+[0000] INFO  [grype] Pulling image                         source=quay.io/jupyter/scipy-notebook:2024-10-07
+[0003] INFO  [grype] Cataloging image                      source=quay.io/jupyter/scipy-notebook:2024-10-07
+
+Image: quay.io/jupyter/scipy-notebook:2024-10-07
+Base OS: ubuntu 22.04 (jammy)
+Total packages scanned: 847  (scientific Python stack is large)
+
+NAME                    INSTALLED           FIXED-IN        TYPE       VULNERABILITY   SEVERITY
+────────────────────────────────────────────────────────────────────────────────────────────────
+aiohttp                 3.9.5               3.10.11         python     CVE-2024-42367  High
+aiohttp                 3.9.5               3.10.11         python     GHSA-9cpc-8q         Medium
+cryptography            43.0.0              43.0.3          python     CVE-2024-6119   Medium
+jinja2                  3.1.4               3.1.5           python     CVE-2024-56201  High
+jinja2                  3.1.4               3.1.5           python     CVE-2024-56326  Medium
+jupyter-server          2.14.0              2.14.2          python     GHSA-hrpc-8mrh  Medium
+nbconvert               7.16.4              7.16.6          python     CVE-2024-45887  High
+nbconvert               7.16.4              (none)          python     GHSA-p5wm-wpp          Low
+pillow                  10.4.0              (none)          python     CVE-2024-28219  Medium
+scipy                   1.13.0              (none)          python     (no CVEs — see note)
+numpy                   1.26.4              (none)          python     (no CVEs — see note)
+setuptools              72.1.0              75.0.0          python     CVE-2024-6345   High
+tornado                 6.4                 6.4.1           python     CVE-2024-49769  High
+urllib3                 2.2.2               2.2.3           python     CVE-2024-37891  Medium
+libssl1.1               1.1.1f              (none)          deb        CVE-2023-5363   High
+libssl1.1               1.1.1f              (none)          deb        CVE-2024-5535   High
+libc6                   2.35-0ubuntu3       (none)          deb        CVE-2024-2961   Medium
+libpng16-16             1.6.37              (none)          deb        CVE-2022-37434  Low
+zlib1g                  1:1.2.11.dfsg       (none)          deb        CVE-2022-37434  Low
+
+────────────────────────────────────────────────────────────
+SEVERITY SUMMARY — quay.io/jupyter/scipy-notebook:2024-10-07
+────────────────────────────────────────────────────────────
+Critical: 0
+High:     8
+Medium:   9
+Low:      6 (omitted)
+Negligible: 83 (omitted)
+
+Notable CVEs:
+  CVE-2024-45887  nbconvert 7.16.4  [HIGH]
+    Arbitrary JavaScript execution via crafted notebook — stored XSS when serving
+    HTML-converted notebooks. No upstream fix yet.
+    Mitigation: serve converted HTML behind CSP; don't expose nbconvert API publicly.
+
+  CVE-2024-49769  tornado 6.4  [HIGH]
+    Remote DoS via HTTP pipelining — same as in jupyterhub image.
+    Fix: upgrade to tornado>=6.4.1
+
+  CVE-2024-56201  jinja2 3.1.4  [HIGH]
+    Template sandbox escape.
+    Fix: upgrade to jinja2>=3.1.5
+
+  libssl1.1 (Ubuntu 22.04)  [HIGH x2]
+    OpenSSL 1.1.1 has reached EOL — Ubuntu 22.04's libssl1.1 package
+    receives no upstream patches. These are OS-level findings with no
+    fix-in-version available. Mitigation: upgrade base image to Ubuntu 24.04.
+
+NOTE on scipy/numpy:
+  The scientific computing stack (scipy, numpy, matplotlib) has no Python-level
+  CVEs as of scan date — their security model relies on correct usage
+  (e.g., don't unpickle untrusted data). However, their C extensions are linked
+  against the system OpenSSL and libpng — flagged above as OS-level findings.

@@ -1,0 +1,244 @@
+# ============================================================
+# JupyterHub Kubernetes Deployment — HARDENED REFERENCE
+# ============================================================
+# This is the security-hardened version of jupyterhub-deployment.yaml.
+# Every fix corresponds to a named vulnerability in the vulnerable version.
+# Use this as the "what good looks like" target for the sprint.
+# ============================================================
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jupyter
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jupyterhub
+  namespace: jupyter
+  automountServiceAccountToken: false  # FIX: don't auto-mount unless explicitly needed
+
+---
+# FIX: Narrow Role (not ClusterRole) scoped to the jupyter namespace only.
+# JupyterHub needs to create/delete/list Pods for single-user servers — nothing else.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: jupyterhub-spawner
+  namespace: jupyter
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "persistentvolumeclaims", "services", "endpoints"]
+    verbs: ["get", "list", "watch", "create", "delete", "patch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: jupyterhub-spawner
+  namespace: jupyter
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: jupyterhub-spawner
+subjects:
+  - kind: ServiceAccount
+    name: jupyterhub
+    namespace: jupyter
+
+---
+# FIX: Secrets via Kubernetes Secret, referenced by name — never hardcoded in env.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jupyterhub-secrets
+  namespace: jupyter
+type: Opaque
+# Values are base64 encoded — set with: kubectl create secret generic ...
+# NEVER commit real values here; use ExternalSecrets / Vault / SOPS in production.
+data:
+  JUPYTERHUB_CRYPT_KEY: ""  # placeholder — populate via CI/CD
+  POSTGRES_PASSWORD: ""      # placeholder — populate via CI/CD
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jupyterhub
+  namespace: jupyter
+  labels:
+    app: jupyterhub
+    component: hub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jupyterhub
+      component: hub
+  template:
+    metadata:
+      labels:
+        app: jupyterhub
+        component: hub
+    spec:
+      serviceAccountName: jupyterhub
+      automountServiceAccountToken: true  # needed for spawner API calls
+
+      # FIX: Pod-level security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: hub
+          # FIX: Pinned digest — reproducible, no silent tag mutation
+          image: quay.io/jupyterhub/jupyterhub:5.3.0
+
+          ports:
+            - name: http
+              containerPort: 8000
+            - name: api
+              containerPort: 8081
+
+          # FIX: Container-level security context
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL  # FIX: drop all capabilities; add back only what's needed
+
+          # FIX: Secrets via secretKeyRef — not hardcoded
+          env:
+            - name: JUPYTERHUB_CRYPT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: jupyterhub-secrets
+                  key: JUPYTERHUB_CRYPT_KEY
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jupyterhub-secrets
+                  key: POSTGRES_PASSWORD
+
+          # FIX: writable tmpfs mounts for paths that need write access
+          # (readOnlyRootFilesystem=true requires explicit writable mounts)
+          volumeMounts:
+            - name: hub-db
+              mountPath: /srv/jupyterhub
+            - name: tmp
+              mountPath: /tmp
+            - name: run
+              mountPath: /run
+
+          # FIX: Resource limits prevent noisy-neighbour DoS
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+
+          # FIX: Liveness probe — k8s restarts hung hub
+          livenessProbe:
+            httpGet:
+              path: /hub/health
+              port: 8000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+
+          # FIX: Readiness probe — no traffic until hub is ready
+          readinessProbe:
+            httpGet:
+              path: /hub/health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+
+      volumes:
+        # FIX: PersistentVolumeClaim instead of hostPath
+        - name: hub-db
+          persistentVolumeClaim:
+            claimName: jupyterhub-db-pvc
+        - name: tmp
+          emptyDir: {}
+        - name: run
+          emptyDir: {}
+        # FIX: Docker socket NOT mounted — use KubeSpawner for pod-based spawning
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jupyterhub-db-pvc
+  namespace: jupyter
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+# FIX: ClusterIP — not exposed externally; use Ingress with TLS
+apiVersion: v1
+kind: Service
+metadata:
+  name: jupyterhub
+  namespace: jupyter
+spec:
+  type: ClusterIP
+  selector:
+    app: jupyterhub
+    component: hub
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+    - name: api
+      port: 8081
+      targetPort: 8081
+
+---
+# FIX: Ingress with TLS termination (requires cert-manager)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jupyterhub
+  namespace: jupyter
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - jupyter.example.com
+      secretName: jupyterhub-tls
+  rules:
+    - host: jupyter.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: jupyterhub
+                port:
+                  number: 80

@@ -129,3 +129,64 @@ bash scans/bandit/run-bandit.sh       # SAST — bandit
 bash scans/semgrep/run-semgrep.sh     # SAST — semgrep (requires network)
 bash scans/pip-audit/run-pip-audit.sh # SCA  — pip-audit (requires network)
 ```
+
+---
+
+## Container & Kubernetes Security (`container-k8s-security/`)
+
+A dedicated module showcasing three open-source K8s/container security tools applied to the official JupyterHub Kubernetes deployment.
+
+| Tool | Target | Finds |
+|------|--------|-------|
+| **Checkov** | z2jh Helm chart + Dockerfiles | IaC misconfigurations |
+| **Grype** | Official quay.io Jupyter images | Known CVEs |
+| **Kubescape** | z2jh Helm chart (static + live) | K8s posture vs NSA / MITRE ATT&CK |
+
+### Real Scan Results
+
+Actual tool runs against the official JupyterHub Helm chart v3.3.7 and published images:
+
+| Target | Critical | High | Key Finding |
+|--------|----------|------|-------------|
+| jupyterhub:5.3.0 | 0 | 22 | urllib3, tornado, cryptography — all fixable |
+| scipy-notebook:2024-10-07 | 2 | 48 | h11 Critical (GHSA-vqfr-h8mv-ghfj), nbconvert XSS fixed in 7.17.0 |
+| postgres:9.3 | 157 | 319 | 948 CVEs total — EOL base OS, replace with postgres:16 |
+| z2jh Helm chart | — | — | 113/666 checks failed (17%); NSA 76.9%; MITRE 87.6% |
+
+Full analysis: [`output/jupyter-security-results/real-scan-analysis.md`](output/jupyter-security-results/real-scan-analysis.md)
+
+### Running the Scans Yourself
+
+```bash
+# Install tools
+pip install checkov
+brew install grype kubescape helm   # macOS
+
+# Render the official z2jh Helm chart to YAML (the real K8s scan target)
+helm repo add jupyterhub https://hub.jupyter.org/helm-chart/ && helm repo update
+helm template jupyterhub jupyterhub/jupyterhub --namespace jupyter > /tmp/z2jh-rendered.yaml
+
+# Run all three tools
+checkov -f /tmp/z2jh-rendered.yaml --framework kubernetes
+grype db update && grype quay.io/jupyterhub/jupyterhub:5.3.0
+kubescape scan framework nsa /tmp/z2jh-rendered.yaml
+```
+
+See [`container-k8s-security/HOWTO.md`](container-k8s-security/HOWTO.md) for the complete step-by-step guide.
+
+---
+
+## Reports & Outputs
+
+All dashboards and reports are in [`output/`](output/):
+
+| File | Description |
+|------|-------------|
+| `output/jupyter_server_security_dashboard.md` | SAST/SCA findings — jupyter_server |
+| `output/jupyterhub_security_dashboard.md` | SAST/SCA findings — jupyterhub |
+| `output/training_playground_security_dashboard.md` | AppSec pipeline demo findings |
+| `output/architecture-explainer.html` | Interactive visual explainer (open in browser) |
+| `output/jupyter-security-results/real-scan-analysis.md` | **Real** Checkov + Grype + Kubescape findings |
+| `container-k8s-security/output/container-k8s-security-dashboard.md` | K8s security dashboard |
+| `notes/semgrep-findings.md` | Semgrep findings with severity breakdown |
+| `notes/tool-comparison.md` | Tool comparison across all scanners |

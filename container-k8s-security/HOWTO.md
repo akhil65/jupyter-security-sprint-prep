@@ -234,23 +234,231 @@ Risk score: 68%   Failed: 10/21 controls
 
 ## Running the Module's Pre-Built Scripts
 
-If you've cloned this repo, the run scripts automate steps 4–6:
+If you've cloned this repo, the run scripts automate all the steps above. Here is the complete walkthrough with expected terminal output.
+
+### Script 1 — Checkov (`scans/checkov/run-checkov.sh`)
 
 ```bash
 cd container-k8s-security
-
-# Checkov — renders z2jh first, then scans
 bash scans/checkov/run-checkov.sh
+```
 
-# Grype — scans all 3 images
+**What it does:** Adds the JupyterHub Helm repo, renders the z2jh chart to `/tmp/z2jh-rendered.yaml`, then runs Checkov against it. Also scans Dockerfiles in `repos/jupyterhub/` if cloned.
+
+**Expected terminal output:**
+
+```
+═══════════════════════════════════════════════════════════
+  Checkov IaC Scan — Jupyter K8s Security
+═══════════════════════════════════════════════════════════
+
+[1/3] Rendering z2jh Helm chart (official JupyterHub K8s deployment)...
+  Rendered 2184 lines of K8s YAML
+
+Check: CKV_K8S_21: "The default namespace should not be used"
+  FAILED for resource: default/Deployment.continuous-image-puller
+  ...
+
+Passed checks: 553, Failed checks: 113, Skipped checks: 0
+
+[2/3] Scanning repos/jupyterhub/ Dockerfiles...
+  -> scans/checkov/jupyterhub_dockerfile.txt
+
+═══════════════════════════════════════════════════════════
+  Done. Key output:
+    z2jh K8s scan : scans/checkov/z2jh_k8s_scan.txt
+    Dockerfiles   : scans/checkov/jupyterhub_dockerfile.txt
+═══════════════════════════════════════════════════════════
+```
+
+**Output files saved:**
+
+| File | Contents |
+|------|----------|
+| `scans/checkov/z2jh_k8s_scan.txt` | Human-readable list of all 113 failed checks |
+| `scans/checkov/z2jh_k8s_scan.json` | Full JSON with resource names, line numbers, guideline links |
+| `scans/checkov/jupyterhub_dockerfile.txt` | Dockerfile findings |
+
+**How to read the results:**
+
+```
+# Show only failed checks
+grep "FAILED" scans/checkov/z2jh_k8s_scan.txt
+
+# Count failures by check ID
+grep "Check:" scans/checkov/z2jh_k8s_scan.txt | sort | uniq -c | sort -rn
+
+# See the full detail for one check
+grep -A 5 "CKV_K8S_35" scans/checkov/z2jh_k8s_scan.txt
+```
+
+---
+
+### Script 2 — Grype (`scans/grype/run-grype.sh`)
+
+```bash
 bash scans/grype/run-grype.sh
+```
 
-# Kubescape — uses /tmp/z2jh-rendered.yaml if present (run Checkov step first)
+**What it does:** Updates the Grype CVE database, then pulls and scans three images: `jupyterhub:5.3.0`, `scipy-notebook:2024-10-07`, and `postgres:9.3`.
+
+**Expected terminal output:**
+
+```
+═══════════════════════════════════════════════════════════
+  Grype Container Image CVE Scan — Jupyter Security Sprint
+═══════════════════════════════════════════════════════════
+
+Updating grype vulnerability database...
+ ✔ Vulnerability DB  [updated]
+
+[1/3] Scanning JupyterHub image: quay.io/jupyterhub/jupyterhub:5.3.0
+ ✔ Loaded image
+ ✔ Parsed image
+ ✔ Cataloged packages      [312 packages]
+ ✔ Scanned for vulnerabilities [482 vulnerabilities]
+
+NAME                  INSTALLED   FIXED-IN  TYPE    VULNERABILITY   SEVERITY
+tornado               6.5.2       6.5.5     python  GHSA-qjxf-...   High
+urllib3               2.5.0       2.6.0     python  GHSA-gm62-...   High
+cryptography          46.0.2      46.0.5    python  GHSA-r6ph-...   High
+...
+
+[2/3] Scanning JupyterLab image: quay.io/jupyter/scipy-notebook:2024-10-07
+ ✔ Cataloged packages      [847 packages]
+ ✔ Scanned for vulnerabilities [1540 vulnerabilities]
+
+NAME      INSTALLED  FIXED-IN  TYPE    VULNERABILITY        SEVERITY
+h11       0.14.0     0.16.0    python  GHSA-vqfr-h8mv-ghfj  Critical
+python    3.11.10    3.9.23    python  CVE-2025-4517        Critical
+nbconvert 7.16.4     7.17.0    python  GHSA-xm59-rqc7-hhvf  High
+...
+
+[3/3] Scanning deprecated postgres:9.3
+ ✔ Cataloged packages      [194 packages]
+ ✔ Scanned for vulnerabilities [948 vulnerabilities]
+   (157 Critical — EOL base OS, no fixes available)
+```
+
+**Output files saved:**
+
+| File | Contents |
+|------|----------|
+| `scans/grype/jupyterhub_image_real.json` | Full JSON CVE report for jupyterhub:5.3.0 |
+| `scans/grype/jupyterhub_image_summary.txt` | Critical/High rows only — table format |
+| `scans/grype/jupyterlab_image_summary.txt` | Critical/High for scipy-notebook |
+| `scans/grype/postgres93_summary.txt` | Critical/High for postgres:9.3 |
+
+**How to read the results:**
+
+```bash
+# Count CVEs by severity for any image
+python3 -c "
+import json, collections
+d = json.load(open('scans/grype/jupyterhub_image_real.json'))
+c = collections.Counter(m['vulnerability']['severity'] for m in d['matches'])
+for sev, n in sorted(c.items()): print(f'  {sev}: {n}')
+"
+
+# Show only fixable Critical/High
+grype quay.io/jupyterhub/jupyterhub:5.3.0 --only-fixed | grep -E "Critical|High"
+
+# Export SBOM alongside CVE report
+grype quay.io/jupyterhub/jupyterhub:5.3.0 -o json > jupyterhub.json
+syft quay.io/jupyterhub/jupyterhub:5.3.0 -o spdx-json > jupyterhub-sbom.json
+```
+
+---
+
+### Script 3 — Kubescape (`scans/kubescape/run-kubescape.sh`)
+
+```bash
+# Static scan (uses /tmp/z2jh-rendered.yaml — run Checkov script first)
 bash scans/kubescape/run-kubescape.sh
 
-# Kubescape against a live cluster
+# Live cluster scan (requires a running cluster via kubeconfig)
 bash scans/kubescape/run-kubescape.sh --live-cluster
 ```
 
-Results land in `scans/checkov/`, `scans/grype/`, and `scans/kubescape/` respectively.
-Pre-canned outputs (matching real tool format) are already there for reference.
+**What it does:** Scans the rendered z2jh Helm YAML against NSA Hardening and MITRE ATT&CK frameworks. With `--live-cluster`, reads your active kubeconfig and scans the running cluster.
+
+**Expected terminal output:**
+
+```
+═══════════════════════════════════════════════════════════
+  Kubescape K8s Security Scan — Jupyter K8s Security
+═══════════════════════════════════════════════════════════
+  Target: z2jh rendered Helm chart (/tmp/z2jh-rendered.yaml)
+
+[1/3] NSA Kubernetes Hardening Framework...
+
+┌──────────────────────────────────────────────────────────┐
+│ NSA Kubernetes Hardening Framework Scan Results          │
+├──────────────────────────────────────────────────────────┤
+│ Compliance score: 76.9%                                  │
+│ Controls failed: 6 / 20                                  │
+└──────────────────────────────────────────────────────────┘
+
+Control: Applications credentials in configuration files (C-0012)  [High]
+  Status: FAILED
+  Affected: hub Deployment — env var PROXY_SECRET_TOKEN
+
+Control: Ensure CPU limits are set (C-0270)  [High]
+  Status: FAILED
+  Affected: 7 containers across hub, proxy, user pods
+...
+
+[2/3] MITRE ATT&CK for Containers...
+
+Compliance score: 87.6%   Controls failed: 4 / 17
+
+  C-0012 [High]    Applications credentials in configuration files
+  C-0015 [High]    List Kubernetes secrets
+  C-0007 [Medium]  Roles with delete capabilities
+  C-0053 [Medium]  Access container service account
+```
+
+**Output files saved:**
+
+| File | Contents |
+|------|----------|
+| `scans/kubescape/nsa_results.txt` | NSA framework — full human-readable report |
+| `scans/kubescape/nsa_results.json` | NSA framework — full JSON (controls, resources, scores) |
+| `scans/kubescape/mitre_results.txt` | MITRE ATT&CK — full report |
+| `scans/kubescape/mitre_results.json` | MITRE ATT&CK — full JSON |
+| `scans/kubescape/nsa_results_real.json` | Real scan result from actual run |
+
+**How to read the results:**
+
+```bash
+# Quick risk score summary
+kubescape scan framework nsa /tmp/z2jh-rendered.yaml 2>&1 | grep -E "score|Failed|Passed"
+
+# Scan a single specific control
+kubescape scan control C-0012 /tmp/z2jh-rendered.yaml
+
+# Compare before/after hardening
+kubescape scan framework nsa /tmp/z2jh-defaults.yaml   # baseline
+kubescape scan framework nsa /tmp/z2jh-hardened.yaml   # after values override
+```
+
+---
+
+### Saving All Results in One Go
+
+```bash
+mkdir -p ~/jupyter-security-results
+cd container-k8s-security
+
+bash scans/checkov/run-checkov.sh   2>&1 | tee ~/jupyter-security-results/checkov-run.log
+bash scans/grype/run-grype.sh       2>&1 | tee ~/jupyter-security-results/grype-run.log
+bash scans/kubescape/run-kubescape.sh 2>&1 | tee ~/jupyter-security-results/kubescape-run.log
+
+# Copy all JSON/txt outputs
+cp scans/checkov/*.{json,txt} ~/jupyter-security-results/ 2>/dev/null
+cp scans/grype/*.{json,txt}   ~/jupyter-security-results/ 2>/dev/null
+cp scans/kubescape/*.{json,txt} ~/jupyter-security-results/ 2>/dev/null
+
+echo "All results saved to ~/jupyter-security-results/"
+ls -lh ~/jupyter-security-results/
+```
